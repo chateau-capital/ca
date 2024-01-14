@@ -21,6 +21,8 @@ contract StakingPool is Ownable {
     uint public currentIndexed;
     uint public validIndexed;
 
+    bool public isSettled = true;
+
     constructor(IERC20 _issueToken, IERC20 _redeemToekn) Ownable(msg.sender) {
         issueToken = _issueToken;
         redeemToekn = _redeemToekn;
@@ -81,5 +83,10 @@ contract StakingPool is Ownable {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.transfer(msg.sender, balance);
         validIndexed = currentIndexed;
+        isSettled = false;
+    }
+
+    function updateSettleState(bool bools) public onlyOwner {
+        isSettled = bools;
     }
 }

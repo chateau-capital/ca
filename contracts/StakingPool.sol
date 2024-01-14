@@ -8,20 +8,20 @@ contract StakingPool is Ownable {
     IERC20 public issueToken;
     IERC20 public redeemToekn;
 
-    struct UserIssue {
+    struct Issue {
         address user;
-        address issueAmount;
-        address issueTime;
+        uint issueAmount;
+        uint issueTime;
         bool isStaking;
     }
 
-    mapping(uint => UserIssue) public userIssue;
+    mapping(uint => Issue) public issues;
     mapping(address => uint[]) public userIssueIndex;
 
     uint public currentIndexed;
     uint public validIndexed;
 
-    constructor(IERC20 _issueToken, IERC20 _redeemToekn) {
+    constructor(IERC20 _issueToken, IERC20 _redeemToekn) Ownable(msg.sender) {
         issueToken = _issueToken;
         redeemToekn = _redeemToekn;
         currentIndexed++;
@@ -29,7 +29,7 @@ contract StakingPool is Ownable {
 
     function stake(uint256 amount) public {
         issueToken.transferFrom(msg.sender, address(this), amount);
-        userIssue[currentIndexed] = UserIssue(
+        issues[currentIndexed] = Issue(
             msg.sender,
             amount,
             block.timestamp,
@@ -39,17 +39,17 @@ contract StakingPool is Ownable {
         currentIndexed++;
     }
 
-    function unstake(uint256 amount) public {
+    function unstake() public {
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
         uint unstakeAmount;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
             if (index > validIndexed) {
-                UserIssue storage userIssue = userIssue[index];
-                if (userIssue.isStaking) {
-                    unstakeAmount += userIssue.issueAmount;
-                    userIssue.isStaking = false;
+                Issue storage issueInfo = issues[index];
+                if (issueInfo.isStaking) {
+                    unstakeAmount += issueInfo.issueAmount;
+                    issueInfo.isStaking = false;
                 }
             }
         }
@@ -57,7 +57,27 @@ contract StakingPool is Ownable {
         if (unstakeAmount > 0) issueToken.transfer(msg.sender, unstakeAmount);
     }
 
-    function withdraw(uint256 amount) public onlyOwner {
+    function getStakingInfo(
+        address user
+    ) public view returns (Issue[] memory) {
+        uint[] memory userIssueIndexs = userIssueIndex[user];
+        Issue[] memory userIssues;
+
+        uint key;
+        for (uint i; i < userIssueIndexs.length; i++) {
+            uint index = userIssueIndexs[i];
+            Issue memory issueInfo = issues[index];
+
+            if (index > validIndexed && issueInfo.isStaking) {
+                userIssues[key] = issueInfo;
+                key++;
+            }
+        }
+
+        return userIssues;
+    }
+
+    function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.transfer(msg.sender, balance);
         validIndexed = currentIndexed;

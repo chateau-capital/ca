@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -10,5 +11,12 @@ module.exports = {
     //     blockNumber: 13000000,
     //   },
     // },
+    sepolia:{
+      url: process.env.SEPOLIA_URL,
+      accounts:[process.env.SEPOLIA_PRIVATE_KEY]
+    }
   },
+  etherscan:{
+    apiKey: process.env.ETHERSCAN_API_KEY
+  }
 };

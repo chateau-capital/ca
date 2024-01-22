@@ -6,9 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract USDT is ERC20, ERC20Burnable, Ownable {
-    constructor(
-        address initialOwner
-    ) ERC20('USDT', 'USDT') Ownable(initialOwner) {
+    constructor() ERC20('USDT', 'USDT') Ownable(msg.sender) {
         mint(msg.sender, 1000000 * 10 ** 18);
     }
 

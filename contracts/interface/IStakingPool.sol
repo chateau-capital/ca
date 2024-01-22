@@ -1,3 +1,3 @@
 interface  IStakingPool {
-    function isSettled() external view(returns bool);
+    function isSettled() external view returns (bool);
 }

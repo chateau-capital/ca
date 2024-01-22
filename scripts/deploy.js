@@ -7,22 +7,24 @@
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const ShareCoin = await hre.ethers.deployContract("Share");
+  const shareCoin = await ShareCoin.waitForDeployment();
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+  const USDTCoin = await hre.ethers.deployContract("USDT");
+  const usdtCoin = await USDTCoin.waitForDeployment();
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  const StakingPool = await hre.ethers.deployContract("StakingPool",[usdtCoin.target, shareCoin.target]);
+  const stakingPool = await StakingPool.waitForDeployment();
 
-  await lock.waitForDeployment();
+  const VaultPool = await hre.ethers.deployContract("VaultPool",[usdtCoin.target, shareCoin.target, stakingPool.target]);
+  const vaultPool = await VaultPool.waitForDeployment();
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  );
+  console.table({
+    shareCoin: shareCoin.target,
+    usdtCoin: usdtCoin.target,
+    stakingPool: stakingPool.target,
+    vaultPool: vaultPool.target,
+  })
 }
 
 // We recommend this pattern to be able to use async/await everywhere

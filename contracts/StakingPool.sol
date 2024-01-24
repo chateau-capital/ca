@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/interfaces/IERC20.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "./utils/NotAmerica.sol";
 
-contract StakingPool is Ownable {
+contract StakingPool is Ownable, NotAmerica {
     IERC20 public issueToken;
     IERC20 public redeemToekn;
 
@@ -23,13 +24,17 @@ contract StakingPool is Ownable {
 
     bool public isSettled = true;
 
-    constructor(IERC20 _issueToken, IERC20 _redeemToekn) Ownable(msg.sender) {
+    constructor(
+        IERC20 _issueToken,
+        IERC20 _redeemToekn,
+        address _passPortReader
+    ) Ownable(msg.sender) NotAmerica(_passPortReader) {
         issueToken = _issueToken;
         redeemToekn = _redeemToekn;
         currentIndexed++;
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) public NOT_AMERICAN {
         issueToken.transferFrom(msg.sender, address(this), amount);
         issues[currentIndexed] = Issue(
             msg.sender,
@@ -41,7 +46,7 @@ contract StakingPool is Ownable {
         currentIndexed++;
     }
 
-    function unstake() public {
+    function unstake() public NOT_AMERICAN {
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
         uint unstakeAmount;
@@ -59,9 +64,7 @@ contract StakingPool is Ownable {
         if (unstakeAmount > 0) issueToken.transfer(msg.sender, unstakeAmount);
     }
 
-    function getStakingInfo(
-        address user
-    ) public view returns (Issue[] memory) {
+    function getStakingInfo(address user) public view returns (Issue[] memory) {
         uint[] memory userIssueIndexs = userIssueIndex[user];
         Issue[] memory userIssues;
 

@@ -2,6 +2,7 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@quadrata/contracts": "^1.0.3",
     "hardhat": "^2.19.4"
   },
   "dependencies": {

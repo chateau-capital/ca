@@ -15,9 +15,8 @@ contract VaultPool is Ownable, NotAmerica {
     constructor(
         IERC20 _issueToken,
         IERC20 _redeemToekn,
-        IStakingPool _stakingPool,
-        address _passPortReader
-    ) Ownable(msg.sender) NotAmerica(_passPortReader) {
+        IStakingPool _stakingPool
+    ) Ownable(msg.sender) {
         issueToken = _issueToken;
         redeemToekn = _redeemToekn;
         stakingPool = _stakingPool;

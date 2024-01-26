@@ -22,7 +22,7 @@ contract VaultPool is Ownable, NotAmerica {
         stakingPool = _stakingPool;
     }
 
-    function reedem(uint256 amount) public notSettling NOT_AMERICAN{
+    function reedem(uint256 amount) public notSettling {
         uint redeemTotal = redeemToekn.totalSupply(); // share
         uint issueTotal = issueToken.balanceOf(address(this)); // usdt
 

@@ -14,6 +14,10 @@ module.exports = {
     sepolia:{
       url: process.env.SEPOLIA_URL,
       accounts:[process.env.SEPOLIA_PRIVATE_KEY]
+    },
+    bera:{
+      url:"https://rpc.ankr.com/berachain_testnet",
+      accounts:[process.env.SEPOLIA_PRIVATE_KEY]
     }
   },
   etherscan:{

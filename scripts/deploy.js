@@ -7,24 +7,29 @@
 const hre = require("hardhat");
 
 async function main() {
-  const ShareCoin = await hre.ethers.deployContract("Share");
-  const shareCoin = await ShareCoin.waitForDeployment();
-
   const USDTCoin = await hre.ethers.deployContract("USDT");
   const usdtCoin = await USDTCoin.waitForDeployment();
 
-  const StakingPool = await hre.ethers.deployContract("StakingPool",[usdtCoin.target, shareCoin.target]);
-  const stakingPool = await StakingPool.waitForDeployment();
+  const QuadReaderUtils = await hre.ethers.deployContract("QuadReaderUtils");
+  const quadReaderUtils = await QuadReaderUtils.waitForDeployment();
 
-  const VaultPool = await hre.ethers.deployContract("VaultPool",[usdtCoin.target, shareCoin.target, stakingPool.target]);
-  const vaultPool = await VaultPool.waitForDeployment();
+  const Factory = await hre.ethers.deployContract("Factory", {
+    libraries: {
+      QuadReaderUtils: quadReaderUtils.target,
+    },
+  });
+  const factory = await Factory.waitForDeployment();
+
+  const Fund = await factory.newFund.staticCall("RWA","RWA",usdtCoin.target);
+  await factory.newFund("RWA","RWA",usdtCoin.target);
 
   console.table({
-    shareCoin: shareCoin.target,
+    shareCoin: Fund[0],
     usdtCoin: usdtCoin.target,
-    stakingPool: stakingPool.target,
-    vaultPool: vaultPool.target,
-  })
+    stakingPool: Fund[1],
+    vaultPool: Fund[2],
+    factory: factory.target,
+  });
 }
 
 // We recommend this pattern to be able to use async/await everywhere

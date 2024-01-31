@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./utils/NotAmerica.sol";
 
+import "hardhat/console.sol";
+
 contract StakingPool is Ownable, NotAmerica {
     IERC20 public issueToken;
     IERC20 public redeemToekn;
@@ -23,7 +25,7 @@ contract StakingPool is Ownable, NotAmerica {
     uint public indexStar;
 
     uint public pendingLiquidation;
-    
+
     uint public rate; // swap share to usdt - 10000 = 100%
 
     constructor(
@@ -44,12 +46,7 @@ contract StakingPool is Ownable, NotAmerica {
     function stake(uint256 amount) public NOT_AMERICAN {
         require(amount > 0, "Amount should be greater than 0");
         issueToken.transferFrom(msg.sender, address(this), amount);
-        issues[indexEnd] = Issue(
-            msg.sender,
-            amount,
-            block.timestamp,
-            true
-        );
+        issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);
         userIssueIndex[msg.sender].push(indexEnd);
         indexEnd++;
 
@@ -72,7 +69,7 @@ contract StakingPool is Ownable, NotAmerica {
             }
         }
 
-        if (unstakeAmount > 0){
+        if (unstakeAmount > 0) {
             issueToken.transfer(msg.sender, unstakeAmount);
             pendingLiquidation -= unstakeAmount;
             emit UserUnstake(msg.sender, unstakeAmount);
@@ -82,16 +79,25 @@ contract StakingPool is Ownable, NotAmerica {
     function getStakingInfo(address user) public view returns (Issue[] memory) {
         require(user != address(0), "Invalid address");
         uint[] memory userIssueIndexs = userIssueIndex[user];
-        Issue[] memory userIssues;
 
         uint key;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
+            if (index > indexStar && issueInfo.isStaking) key++;
+        }
+
+        Issue[] memory userIssues = new Issue[](key);
+
+        uint key2;
+        for (uint i; i < userIssueIndexs.length; i++) {
+            uint index = userIssueIndexs[i];
+            Issue memory issueInfo = issues[index];
+
             if (index > indexStar && issueInfo.isStaking) {
-                userIssues[key] = issueInfo;
-                key++;
+                userIssues[key2] = issueInfo;
+                key2++;
             }
         }
 
@@ -101,33 +107,40 @@ contract StakingPool is Ownable, NotAmerica {
     function swap(uint256 amount) external {
         require(amount > 0, "Amount should be greater than 0");
         require(rate > 0, "Rate should be greater than 0");
-        require(issueToken.balanceOf(msg.sender) >= amount, "Insufficient balance of share token");
+        require(
+            redeemToekn.balanceOf(msg.sender) >= amount,
+            "Insufficient balance of share token"
+        );
 
         uint256 amountB = (amount * rate) / 10000;
         uint256 amountBTotal = amountB;
 
-        require(pendingLiquidation >= amountB, "Insufficient balance of issue token");
+        require(
+            pendingLiquidation >= amountB,
+            "Insufficient balance of issue token"
+        );
 
         redeemToekn.transferFrom(msg.sender, address(this), amount);
 
-        for(uint i = indexEnd; i > indexStar; i--) {
+        for (uint i = indexEnd; i > indexStar; i--) {
             Issue storage issueInfo = issues[i];
-
             if (issueInfo.isStaking) {
-                if(amountB > 0) {
-                    uint amountA = (issueInfo.issueAmount * 10000) / rate;
-                    if(amountB >= issueInfo.issueAmount) {
+                if (amountB > 0) {
+                    if (amountB >= issueInfo.issueAmount) {
+                        uint amountA = (issueInfo.issueAmount * 10000) / rate;
                         amountB -= issueInfo.issueAmount;
                         redeemToekn.transfer(issueInfo.user, amountA);
                         issueInfo.isStaking = false;
                     } else {
-                        issueToken.transfer(issueInfo.user, amountA);
+                        uint amountA = (amountB * 10000) / rate;
+                        redeemToekn.transfer(issueInfo.user, amountA);
                         issueInfo.issueAmount -= amountB;
                         amountB = 0;
                     }
                 }
             }
         }
+
         pendingLiquidation -= amountBTotal;
         issueToken.transfer(msg.sender, amountBTotal);
     }

@@ -30,7 +30,7 @@ describe("Lock", function () {
     );
     await factory.newFund("RWA", "RWA", usdtCoin.target);
 
-    const share = await ethers.getContractAt("ERC20", Fund[0]);
+    const share = await ethers.getContractAt("Share", Fund[0]);
     const usdt = await ethers.getContractAt("USDT", usdtCoin.target);
     const stakingPool = await ethers.getContractAt("StakingPool", Fund[1]);
     const vaultPool = await ethers.getContractAt("VaultPool", Fund[2]);
@@ -114,5 +114,118 @@ describe("Lock", function () {
         "1500000000000000000"
       );
     });
+    it("Should be able to stake and unstake usdt", async function () {
+      const { owner, otherAccount, usdt, stakingPool } = await loadFixture(
+        deployOneYearLockFixture
+      );
+
+      await stakingPool.stake("500000000000000000");
+
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
+        "500000000000000000"
+      );
+
+      await usdt.connect(otherAccount);
+
+      await stakingPool.connect(otherAccount).stake("1000000000000000000");
+
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
+        "1500000000000000000"
+      );
+
+      await stakingPool.unstake();
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
+        "1000000000000000000"
+      );
+
+      await stakingPool.stake("500000000000000000");
+      await stakingPool.unstake();
+      await stakingPool.stake("500000000000000000");
+
+      const getStakingInfo = await stakingPool.getStakingInfo(owner.address);
+      expect(getStakingInfo.length).to.equal(1);
+    });
+
+    it("Should be set rate", async function () {
+      const { owner, otherAccount, usdt, stakingPool } = await loadFixture(
+        deployOneYearLockFixture
+      );
+
+      await stakingPool.setRate("1100");
+      expect(await stakingPool.rate()).to.equal("1100");
+    });
+
+    it("Should be swap token", async function () {
+      const { owner, otherAccount, usdt, stakingPool, share } =
+        await loadFixture(deployOneYearLockFixture);
+
+      await stakingPool.setRate("11000");
+      await stakingPool.connect(otherAccount).stake("1000000000000000000");
+
+      await share.mint([owner.address], ["8000000"]);
+      await share.approve(stakingPool.target, "8000000"); // 88
+      await stakingPool.swap("8000000");
+
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
+        "999999999991200000"
+      );
+      expect(await usdt.balanceOf(owner.address)).to.equal(
+        "1000000000008800000"
+      );
+      expect(await share.balanceOf(otherAccount.address)).to.equal("8000000");
+    });
+    it("Should be swap token total", async function () {
+      const { owner, otherAccount, usdt, stakingPool, share } =
+        await loadFixture(deployOneYearLockFixture);
+
+      await stakingPool.setRate("8000");
+      await stakingPool.connect(otherAccount).stake("1000000000000000000");
+
+      await share.mint([owner.address], ["1250000000000000000"]);
+      await share.approve(stakingPool.target, "1250000000000000000"); // 88
+      await stakingPool.swap("1250000000000000000");
+
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
+        "0"
+      );
+      expect(await usdt.balanceOf(owner.address)).to.equal(
+        "2000000000000000000"
+      );
+      expect(await share.balanceOf(otherAccount.address)).to.equal("1250000000000000000");
+    });
+    it("Should be swap token total2", async function () {
+      const { owner, otherAccount, usdt, stakingPool, share } =
+        await loadFixture(deployOneYearLockFixture);
+
+      await stakingPool.setRate("8000");
+      await stakingPool.stake("500000000000000000");
+      await stakingPool.connect(otherAccount).stake("500000000000000000");
+
+      await share.mint([owner.address], ["1250000000000000000"]);
+      await share.approve(stakingPool.target, "1250000000000000000"); // 88
+      await stakingPool.swap("1250000000000000000");
+
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
+        "0"
+      );
+      expect(await usdt.balanceOf(owner.address)).to.equal(
+        "1500000000000000000"
+      );
+      expect(await share.balanceOf(otherAccount.address)).to.equal("625000000000000000");
+      expect(await share.balanceOf(owner.address)).to.equal("625000000000000000");
+    });
+    it("Should be swap token error", async function () {
+      const { owner, otherAccount, usdt, stakingPool, share } =
+        await loadFixture(deployOneYearLockFixture);
+
+      await stakingPool.setRate("9000");
+      await stakingPool.connect(otherAccount).stake("1000000000000000000");
+
+      await share.mint([owner.address], ["1250000000000000000"]);
+      await share.approve(stakingPool.target, "1250000000000000000"); // 88
+      ;
+    // expect(await stakingPool.swap("1250000000000000000")).to.throw("Insufficient balance of issue token")
+    });
+
   });
 });

@@ -2,11 +2,15 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "./interface/IERC20Burnable.sol";
 import "./utils/NotAmerica.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract VaultPool is Ownable, NotAmerica,Pausable {
+    using SafeERC20 for IERC20Burnable;
+
     IERC20Burnable public issueToken;
     IERC20Burnable public shareToekn;
 
@@ -29,16 +33,16 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         uint withdrawAmount = (amount * issueTotal - 1) / (shareTotal + 1);
 
         require(withdrawAmount > 0 && issueTotal > 0, "withdrawAmount is zero");
-        shareToekn.transferFrom(msg.sender, address(this), amount);
+        shareToekn.safeTransferFrom(msg.sender, address(this), amount);
         shareToekn.burn(amount);
-        shareToekn.transfer(msg.sender, withdrawAmount);
+        shareToekn.safeTransfer(msg.sender, withdrawAmount);
 
         emit UserRedeem(msg.sender, withdrawAmount, amount);
     }
 
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
-        issueToken.transfer(msg.sender, balance);
+        issueToken.safeTransfer(msg.sender, balance);
         
         emit AdminWithdraw(msg.sender, balance);
     }

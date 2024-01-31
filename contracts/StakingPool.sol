@@ -3,11 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./utils/NotAmerica.sol";
 
 import "hardhat/console.sol";
 
 contract StakingPool is Ownable, NotAmerica {
+    using SafeERC20 for IERC20;
+    
     IERC20 public issueToken;
     IERC20 public redeemToekn;
 
@@ -45,7 +48,7 @@ contract StakingPool is Ownable, NotAmerica {
 
     function stake(uint256 amount) public NOT_AMERICAN {
         require(amount > 0, "Amount should be greater than 0");
-        issueToken.transferFrom(msg.sender, address(this), amount);
+        issueToken.safeTransferFrom(msg.sender, address(this), amount);
         issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);
         userIssueIndex[msg.sender].push(indexEnd);
         indexEnd++;
@@ -70,7 +73,7 @@ contract StakingPool is Ownable, NotAmerica {
         }
 
         if (unstakeAmount > 0) {
-            issueToken.transfer(msg.sender, unstakeAmount);
+            issueToken.safeTransfer(msg.sender, unstakeAmount);
             pendingLiquidation -= unstakeAmount;
             emit UserUnstake(msg.sender, unstakeAmount);
         }
@@ -120,7 +123,7 @@ contract StakingPool is Ownable, NotAmerica {
             "Insufficient balance of issue token"
         );
 
-        redeemToekn.transferFrom(msg.sender, address(this), amount);
+        redeemToekn.safeTransferFrom(msg.sender, address(this), amount);
 
         for (uint i = indexEnd; i > indexStar; i--) {
             Issue storage issueInfo = issues[i];
@@ -129,11 +132,11 @@ contract StakingPool is Ownable, NotAmerica {
                     if (amountB >= issueInfo.issueAmount) {
                         uint amountA = (issueInfo.issueAmount * 10000) / rate;
                         amountB -= issueInfo.issueAmount;
-                        redeemToekn.transfer(issueInfo.user, amountA);
+                        redeemToekn.safeTransfer(issueInfo.user, amountA);
                         issueInfo.isStaking = false;
                     } else {
                         uint amountA = (amountB * 10000) / rate;
-                        redeemToekn.transfer(issueInfo.user, amountA);
+                        redeemToekn.safeTransfer(issueInfo.user, amountA);
                         issueInfo.issueAmount -= amountB;
                         amountB = 0;
                     }
@@ -142,12 +145,12 @@ contract StakingPool is Ownable, NotAmerica {
         }
 
         pendingLiquidation -= amountBTotal;
-        issueToken.transfer(msg.sender, amountBTotal);
+        issueToken.safeTransfer(msg.sender, amountBTotal);
     }
 
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
-        issueToken.transfer(msg.sender, balance);
+        issueToken.safeTransfer(msg.sender, balance);
         indexStar = indexEnd;
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);

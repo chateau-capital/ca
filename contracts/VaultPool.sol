@@ -22,6 +22,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     }
 
     function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
+        require(amount > 0, "Amount should be greater than 0");
         uint shareTotal = shareToekn.totalSupply();
         uint issueTotal = issueToken.balanceOf(address(this));
         uint withdrawAmount = (amount * issueTotal - 1) / (shareTotal + 1);

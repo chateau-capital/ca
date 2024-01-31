@@ -31,6 +31,10 @@ contract StakingPool is Ownable, NotAmerica {
         currentIndexed++;
     }
 
+    event UserStake(address indexed user, uint amount);
+    event UserUnstake(address indexed user, uint amount);
+    event AdminWithdraw(address indexed user, uint withdraw);
+
     function stake(uint256 amount) public NOT_AMERICAN {
         issueToken.transferFrom(msg.sender, address(this), amount);
         issues[currentIndexed] = Issue(
@@ -41,6 +45,8 @@ contract StakingPool is Ownable, NotAmerica {
         );
         userIssueIndex[msg.sender].push(currentIndexed);
         currentIndexed++;
+
+        emit UserStake(msg.sender, amount);
     }
 
     function unstake() public NOT_AMERICAN {
@@ -58,7 +64,10 @@ contract StakingPool is Ownable, NotAmerica {
             }
         }
 
-        if (unstakeAmount > 0) issueToken.transfer(msg.sender, unstakeAmount);
+        if (unstakeAmount > 0){
+            issueToken.transfer(msg.sender, unstakeAmount);
+            emit UserUnstake(msg.sender, unstakeAmount);
+        }
     }
 
     function getStakingInfo(address user) public view returns (Issue[] memory) {
@@ -83,5 +92,7 @@ contract StakingPool is Ownable, NotAmerica {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.transfer(msg.sender, balance);
         validIndexed = currentIndexed;
+
+        emit AdminWithdraw(msg.sender, balance);
     }
 }

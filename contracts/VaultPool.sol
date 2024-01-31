@@ -10,6 +10,9 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     IERC20Burnable public issueToken;
     IERC20Burnable public shareToekn;
 
+    event UserRedeem(address indexed user, uint withdraw, uint burn);
+    event AdminWithdraw(address indexed user, uint withdraw);
+
     constructor(
         address _issueToken,
         address _shareToekn
@@ -21,17 +24,21 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
         uint shareTotal = shareToekn.totalSupply();
         uint issueTotal = issueToken.balanceOf(address(this));
-        uint withdrawAmount = (amount * issueTotal - 1) / (shareTotal + 1)  ;
+        uint withdrawAmount = (amount * issueTotal - 1) / (shareTotal + 1);
 
         require(withdrawAmount > 0 && issueTotal > 0, "withdrawAmount is zero");
         shareToekn.transferFrom(msg.sender, address(this), amount);
         shareToekn.burn(amount);
         shareToekn.transfer(msg.sender, withdrawAmount);
+
+        emit UserRedeem(msg.sender, withdrawAmount, amount);
     }
 
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.transfer(msg.sender, balance);
+        
+        emit AdminWithdraw(msg.sender, balance);
     }
 
     function pause() public onlyOwner {

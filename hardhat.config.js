@@ -1,5 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
+require('solidity-coverage');
+require("@nomiclabs/hardhat-solhint");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {

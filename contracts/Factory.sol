@@ -24,8 +24,8 @@ contract Factory is Ownable {
         address issueToken
     ) public onlyOwner returns (address share, address stakingPool,address vaultPool) {
         share = address(new Share(name, symbol, msg.sender));
-        stakingPool = address(new StakingPool(issueToken, share));
-        vaultPool = address(new VaultPool(issueToken, share));
+        stakingPool = address(new StakingPool(issueToken, share, msg.sender));
+        vaultPool = address(new VaultPool(issueToken, share, msg.sender));
         shareStakingpoolVault[share] = ShareInfo(stakingPool, vaultPool);
         emit NewFundCreated(vaultPool, stakingPool, share, issueToken, msg.sender);
     }

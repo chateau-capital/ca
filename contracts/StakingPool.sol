@@ -28,8 +28,9 @@ contract StakingPool is Ownable, NotAmerica {
 
     constructor(
         address _issueToken,
-        address _redeemToekn
-    ) Ownable(msg.sender) {
+        address _redeemToekn,
+        address _owner
+    ) Ownable(_owner) {
         issueToken = IERC20(_issueToken);
         redeemToekn = IERC20(_redeemToekn);
         indexEnd++;

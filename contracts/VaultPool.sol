@@ -15,8 +15,9 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
 
     constructor(
         address _issueToken,
-        address _shareToekn
-    ) Ownable(msg.sender) {
+        address _shareToekn,
+        address _owner
+    ) Ownable(_owner) {
         issueToken = IERC20Burnable(_issueToken);
         shareToekn = IERC20Burnable(_shareToekn);
     }

@@ -20,15 +20,15 @@ contract NotAmerica {
     }
 
     modifier NOT_AMERICAN() {
-        IQuadPassportStore.Attribute[] memory attributes = reader.getAttributes(
-            msg.sender,
-            keccak256("COUNTRY")
-        );
+        // IQuadPassportStore.Attribute[] memory attributes = reader.getAttributes(
+        //     msg.sender,
+        //     keccak256("COUNTRY")
+        // );
 
-        require(attributes.length > 0, "REQUIRES_COUNTRY");
+        // require(attributes.length > 0, "REQUIRES_COUNTRY");
 
         // only users residing outside the US may borrow money
-        require(!attributes[0].value.countryIsEqual("US"), "AMERICAN");
+        // require(!attributes[0].value.countryIsEqual("US"), "AMERICAN");
         _;
     }
 

@@ -31,7 +31,7 @@ contract StakingPool is Ownable, NotAmerica {
         currentIndexed++;
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) public NOT_AMERICAN {
         issueToken.transferFrom(msg.sender, address(this), amount);
         issues[currentIndexed] = Issue(
             msg.sender,
@@ -43,7 +43,7 @@ contract StakingPool is Ownable, NotAmerica {
         currentIndexed++;
     }
 
-    function unstake() public {
+    function unstake() public NOT_AMERICAN {
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
         uint unstakeAmount;

@@ -22,14 +22,12 @@ contract StakingPool is Ownable, NotAmerica {
     uint public currentIndexed;
     uint public validIndexed;
 
-    bool public isSettled = true;
-
     constructor(
-        IERC20 _issueToken,
-        IERC20 _redeemToekn
+        address _issueToken,
+        address _redeemToekn
     ) Ownable(msg.sender) {
-        issueToken = _issueToken;
-        redeemToekn = _redeemToekn;
+        issueToken = IERC20(_issueToken);
+        redeemToekn = IERC20(_redeemToekn);
         currentIndexed++;
     }
 
@@ -85,10 +83,5 @@ contract StakingPool is Ownable, NotAmerica {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.transfer(msg.sender, balance);
         validIndexed = currentIndexed;
-        isSettled = false;
-    }
-
-    function updateSettleState(bool bools) public onlyOwner {
-        isSettled = bools;
     }
 }

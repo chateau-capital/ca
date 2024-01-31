@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Share is ERC20, ERC20Burnable, Ownable {
+    address public vault;
+
     constructor(
         string memory name,
-        string memory symbol,
-        address owner
-    ) ERC20(name, symbol) Ownable(owner) {}
+        string memory symbol
+    ) ERC20(name, symbol) Ownable(msg.sender) {}
 
     function mint(
         address[] memory tos,
@@ -24,7 +25,19 @@ contract Share is ERC20, ERC20Burnable, Ownable {
         }
     }
 
-    function burn(address from, uint256 amount) public onlyOwner {
+    function burn(address from, uint256 amount) public onlyOwnerOrVault {
         _burn(from, amount);
+    }
+
+    function setVault(address _vault) external onlyOwner {
+        vault = _vault;
+    }
+
+    modifier onlyOwnerOrVault() {
+        require(
+            msg.sender == owner() || msg.sender == vault,
+            "not owner or vault"
+        );
+        _;
     }
 }

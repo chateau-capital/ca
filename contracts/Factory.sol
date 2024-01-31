@@ -23,10 +23,14 @@ contract Factory is Ownable {
         string memory symbol,
         address issueToken
     ) public onlyOwner returns (address share, address stakingPool,address vaultPool) {
-        share = address(new Share(name, symbol, msg.sender));
+        share = address(new Share(name, symbol));
         stakingPool = address(new StakingPool(issueToken, share, msg.sender));
         vaultPool = address(new VaultPool(issueToken, share, msg.sender));
         shareStakingpoolVault[share] = ShareInfo(stakingPool, vaultPool);
+
+        Share(share).setVault(address(vaultPool));
+        Share(share).transferOwnership(msg.sender);
+
         emit NewFundCreated(vaultPool, stakingPool, share, issueToken, msg.sender);
     }
 }

@@ -14,9 +14,9 @@ async function main() {
   const quadReaderUtils = await QuadReaderUtils.waitForDeployment();
 
   const Factory = await hre.ethers.deployContract("Factory", {
-    libraries: {
-      QuadReaderUtils: quadReaderUtils.target,
-    },
+    // libraries: {
+    //   QuadReaderUtils: quadReaderUtils.target,
+    // },
   });
   const factory = await Factory.waitForDeployment();
 

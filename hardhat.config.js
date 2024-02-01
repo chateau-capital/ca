@@ -1,6 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
-require('solidity-coverage');
+require("solidity-coverage");
 require("@nomiclabs/hardhat-solhint");
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -18,7 +18,7 @@ module.exports = {
       },
     ],
   },
-  }
+
   networks: {
     // hardhat: {
     //   forking: {
@@ -26,16 +26,19 @@ module.exports = {
     //     blockNumber: 13000000,
     //   },
     // },
-    // sepolia:{
-    //   url: process.env.SEPOLIA_URL,
-    //   accounts:[process.env.SEPOLIA_PRIVATE_KEY]
-    // },
-    // bera:{
-    //   url:"https://artio.rpc.berachain.com/",
-    //   chainId:80085,
-    //   accounts:["0xd31f35273e9623698f8ca3a28cb6999120103599bf60a78ef915d5c8424eceef"]
-    // }
-  // etherscan:{
-  //   apiKey: process.env.ETHERSCAN_API_KEY
-  // }
+    sepolia: {
+      url: process.env.SEPOLIA_URL,
+      accounts: [process.env.SEPOLIA_PRIVATE_KEY],
+    },
+    bera: {
+      url: "https://artio.rpc.berachain.com/",
+      chainId: 80085,
+      accounts: [
+        "",
+      ],
+    },
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };

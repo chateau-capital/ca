@@ -35,7 +35,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         require(withdrawAmount > 0 && issueTotal > 0, "withdrawAmount is zero");
         shareToekn.safeTransferFrom(msg.sender, address(this), amount);
         shareToekn.burn(amount);
-        shareToekn.safeTransfer(msg.sender, withdrawAmount);
+        issueToken.safeTransfer(msg.sender, withdrawAmount);
 
         emit UserRedeem(msg.sender, withdrawAmount, amount);
     }
@@ -43,7 +43,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
-        
+        _pause();
         emit AdminWithdraw(msg.sender, balance);
     }
 

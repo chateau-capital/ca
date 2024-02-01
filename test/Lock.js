@@ -3,7 +3,7 @@ const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { expect } = require("chai");
+const { expect, assert } = require("chai");
 
 describe("Lock", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -185,13 +185,13 @@ describe("Lock", function () {
       await share.approve(stakingPool.target, "1250000000000000000"); // 88
       await stakingPool.swap("1250000000000000000");
 
-      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
-        "0"
-      );
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal("0");
       expect(await usdt.balanceOf(owner.address)).to.equal(
         "2000000000000000000"
       );
-      expect(await share.balanceOf(otherAccount.address)).to.equal("1250000000000000000");
+      expect(await share.balanceOf(otherAccount.address)).to.equal(
+        "1250000000000000000"
+      );
     });
     it("Should be swap token total2", async function () {
       const { owner, otherAccount, usdt, stakingPool, share } =
@@ -205,14 +205,16 @@ describe("Lock", function () {
       await share.approve(stakingPool.target, "1250000000000000000"); // 88
       await stakingPool.swap("1250000000000000000");
 
-      expect(await usdt.balanceOf(stakingPool.target)).to.equal(
-        "0"
-      );
+      expect(await usdt.balanceOf(stakingPool.target)).to.equal("0");
       expect(await usdt.balanceOf(owner.address)).to.equal(
         "1500000000000000000"
       );
-      expect(await share.balanceOf(otherAccount.address)).to.equal("625000000000000000");
-      expect(await share.balanceOf(owner.address)).to.equal("625000000000000000");
+      expect(await share.balanceOf(otherAccount.address)).to.equal(
+        "625000000000000000"
+      );
+      expect(await share.balanceOf(owner.address)).to.equal(
+        "625000000000000000"
+      );
     });
     it("Should be swap token error", async function () {
       const { owner, otherAccount, usdt, stakingPool, share } =
@@ -223,9 +225,31 @@ describe("Lock", function () {
 
       await share.mint([owner.address], ["1250000000000000000"]);
       await share.approve(stakingPool.target, "1250000000000000000"); // 88
-      ;
-    // expect(await stakingPool.swap("1250000000000000000")).to.throw("Insufficient balance of issue token")
+      // expect(await stakingPool.swap("1250000000000000000")).to.throw("Insufficient balance of issue token")
+      // assert.isRejected(await stakingPool.swap("1250000000000000000"), "Insufficient balance of issue token");
     });
 
+    it("Should be redeem RWA share token", async function () {
+      const { owner, otherAccount, usdt, vaultPool, share } = await loadFixture(
+        deployOneYearLockFixture
+      );
+
+      await usdt.transfer(vaultPool.target, "1000000000000000000");
+      await share.mint([owner.address],["100000000000000000"]);
+      await share.approve(vaultPool.target, "100000000000000000");
+      await vaultPool.reedem("100000000000000000");
+
+      expect(await usdt.balanceOf(owner.address)).to.equal("999999999999999990");
+      expect(await share.balanceOf(owner.address)).to.equal("0");
+    });
+    it("Shoule manager can withdraw usdt from vault", async function () {
+      const { owner, otherAccount, usdt, vaultPool, share } = await loadFixture(
+        deployOneYearLockFixture
+      );
+
+      await usdt.connect(otherAccount).transfer(vaultPool.target, "1000000000000000000");
+      await vaultPool.withdraw();
+      expect(await usdt.balanceOf(owner.address)).to.equal("2000000000000000000");
+    });
   });
 });

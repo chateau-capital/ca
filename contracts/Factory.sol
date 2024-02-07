@@ -9,7 +9,7 @@ import "./coin/Share.sol";
 contract Factory is Ownable {
     constructor() Ownable(msg.sender) { }
 
-    event NewFundCreated(address indexed vaultPool, address indexed stakingPool, address indexed share, address issueToken, address manamger);
+    event NewFundCreated(address indexed vaultPool, address indexed stakingPool, address indexed share, address issueToken, address manager);
 
     struct ShareInfo {
         address stakingPool;

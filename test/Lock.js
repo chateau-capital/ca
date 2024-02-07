@@ -3,7 +3,7 @@ const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { expect, assert } = require("chai");
+const { expect, assert, should } = require("chai");
 
 describe("Lock", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -225,7 +225,8 @@ describe("Lock", function () {
 
       await share.mint([owner.address], ["1250000000000000000"]);
       await share.approve(stakingPool.target, "1250000000000000000"); // 88
-      // expect(await stakingPool.swap("1250000000000000000")).to.throw("Insufficient balance of issue token")
+      expect(await stakingPool.swap("1250000000000000000")).revertedWithCustomError("Insufficient balance of issue token") 
+      // should.(await stakingPool.swap("1250000000000000000")).to.throw("Insufficient balance of issue token")
       // assert.isRejected(await stakingPool.swap("1250000000000000000"), "Insufficient balance of issue token");
     });
 

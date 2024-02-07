@@ -14,7 +14,8 @@
     "coverage": "hardhat coverage",
     "lint": "hardhat lint",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
-    "deploy:bera": "hardhat run scripts/deploy.js --network bera"
+    "deploy:bera": "hardhat run scripts/deploy.js --network bera",
+    "deploy:arbitrumSepolia": "hardhat run scripts/deploy.js --network arbitrumSepolia"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.1",

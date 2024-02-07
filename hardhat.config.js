@@ -37,8 +37,32 @@ module.exports = {
     //     "",
     //   ],
     // },
+    arbitrumSepolia: {
+      url: `${process.env.ARB_SEPOLIA_NODE}${process.env.ARB_SEPOLIA_ALCHEMY_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+      saveDeployments: true,
+      // chainId: process.env.ARB_SEPLIA_CHAIN_ID,
+      gasPrice: 1_600_000_000,
+      tags: ["arbitrumSepolia"],
+    },
+  },
+  sourcify: {
+    enabled: true
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      etherscan: process.env.ETHERSCAN_API_KEY || "",
+      arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
+   },
+    customChains: [
+      {
+        network: "arbitrumSepolia",
+        chainId: 421614,
+        urls: {
+          apiURL: "https://api-sepolia.arbiscan.io/api",
+          browserURL: "https://sepolia.arbiscan.io/",
+        },
+      },
+    ],
   },
 };

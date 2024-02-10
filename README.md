@@ -6,6 +6,8 @@ Try running some of the following tasks:
 
 # test
 
-``shell
+comments NOT_AMERICAN and run command like this:
+
+```shell
 npx hardhat test
 ```

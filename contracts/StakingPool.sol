@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/// @title CHΛTΞΛU: DeFi meets Private Capital Markets
+/// @author Kaso Qian
+/// @notice user subscription, short-term redemption, transaction and record function, administrator withdrawal function. 
+/// @dev audit pending
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -46,6 +51,10 @@ contract StakingPool is Ownable, NotAmerica {
     event AdminWithdraw(address indexed user, uint withdraw);
     event RateChange(uint rate);
 
+
+    /// @notice Users can pledge funds in a contract to be used as proof of subscription.
+    /// @param amount: uint256, Number of tokens applied for
+    
     function stake(uint256 amount) public NOT_AMERICAN {
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -56,6 +65,9 @@ contract StakingPool is Ownable, NotAmerica {
         pendingLiquidation += amount;
         emit UserStake(msg.sender, amount);
     }
+
+
+    /// @notice Users can withdraw their funds in full at any time before the end of the collection cycle.
 
     function unstake() public NOT_AMERICAN {
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
@@ -78,6 +90,15 @@ contract StakingPool is Ownable, NotAmerica {
             emit UserUnstake(msg.sender, unstakeAmount);
         }
     }
+
+    /// @notice Query the valid subscription information of the user's current turn
+    /// @param user: address, User address for subscription
+    /// @returns   struct Issue {
+                ///    address user: User address for subscription
+                ///    uint issueAmount: Number of tokens spent by the user to subscribe for tokens
+                ///    uint issueTime: Time for users to subscribe
+                ///    bool isStaking: Whether or not the funds were raised
+                /// }
 
     function getStakingInfo(address user) public view returns (Issue[] memory) {
         require(user != address(0), "Invalid address");
@@ -106,6 +127,10 @@ contract StakingPool is Ownable, NotAmerica {
 
         return userIssues;
     }
+
+    /// @notice Users of historical batches can sell their RWA shares to those who want to buy them at the moment by using this function, which can be executed if there are enough funds for the current round of subscriptions and they have not been withdrawn.
+    /// @param amount: uint, Number of RWA assets to be converted
+    
 
     function swap(uint256 amount) external {
         require(amount > 0, "Amount should be greater than 0");
@@ -148,6 +173,9 @@ contract StakingPool is Ownable, NotAmerica {
         issueToken.safeTransfer(msg.sender, amountBTotal);
     }
 
+        /// @notice Users of historical batches can sell their RWA shares to those who want to buy them at the moment by using this function, which can be executed if there are enough funds for the current round of subscriptions and they have not been withdrawn.
+    /// @param amount: uint, Number of RWA assets to be converted
+
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
@@ -155,6 +183,11 @@ contract StakingPool is Ownable, NotAmerica {
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }
+
+
+    /// @notice Set the exchange ratio of swap, 10000 is 100%, only administrator can set it.
+    /// @param _rate: uint, Trading rate，10000 = 100%
+
 
     function setRate(uint _rate) public onlyOwner {
         rate = _rate;

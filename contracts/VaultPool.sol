@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/// @title CHΛTΞΛU: DeFi meets Private Capital Markets
+/// @author Kaso Qian
+/// @notice  Contract that handles centralized user redemption function for RWA tokens
+/// @dev audit pending
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -26,6 +31,9 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         shareToekn = IERC20Burnable(_shareToekn);
     }
 
+    ///@notice Redeem Stablecoin with RWA Assets, by calling this method the user will get Stablecoin and burn RWA tokens.
+    ///@param amount: uint256, amount of RWA coins to redeem
+
     function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
         require(amount > 0, "Amount should be greater than 0");
         uint shareTotal = shareToekn.totalSupply();
@@ -40,6 +48,8 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         emit UserRedeem(msg.sender, withdrawAmount, amount);
     }
 
+    ///@notice The administrator withdraws the stablecoins for the next round of RWA requisitions.
+
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
@@ -47,10 +57,13 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         emit AdminWithdraw(msg.sender, balance);
     }
 
+    ///@notice Suspend user redemptions, callable only by administrators.
+
     function pause() public onlyOwner {
         _pause();
     }
 
+    ///@notice Open for user redemption, callable only by administrators.
     function unpause() public onlyOwner {
         _unpause();
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @title DeFi meets Private Capital Markets
+/// @title CHΛTΞΛU: DeFi meets Private Capital Markets
 /// @author Kaso Qian
 /// @notice create a single RWA asset ETF, generate a separate set of vaultPool and stakingPool. 
 /// @dev audit pending

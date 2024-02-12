@@ -129,7 +129,7 @@ contract StakingPool is Ownable, NotAmerica {
     }
 
     /// @notice Users of historical batches can sell their RWA shares to those who want to buy them at the moment by using this function, which can be executed if there are enough funds for the current round of subscriptions and they have not been withdrawn.
-    /// @param amount: uint, Number of RWA assets to be converted
+    /// @param amount: uint256, Number of RWA assets to be converted
     
 
     function swap(uint256 amount) external {
@@ -174,8 +174,7 @@ contract StakingPool is Ownable, NotAmerica {
     }
 
     /// @notice Calling this function extracts the issueToken from the contract and can only be called by administrators.
-    /// @param issueToken:address, Token used for user subscription
-    /// @param 
+
 
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));

@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 /// @title CHΛTΞΛU: DeFi meets Private Capital Markets
 /// @author Kaso Qian
 /// @notice user subscription, short-term redemption, transaction and record function, administrator withdrawal function. 
-/// @dev audit pending
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -13,11 +12,18 @@ import "./utils/NotAmerica.sol";
 
 import "hardhat/console.sol";
 
+/// @title a contract that manages staking pools for RWA token issuance
+
 contract StakingPool is Ownable, NotAmerica {
     using SafeERC20 for IERC20;
     
+    
     IERC20 public issueToken;
     IERC20 public redeemToekn;
+
+
+    /// @notice Issuance struct that tracks a user's coins being staked in the staking pool
+    /// @custom address user
 
     struct Issue {
         address user;
@@ -53,7 +59,7 @@ contract StakingPool is Ownable, NotAmerica {
 
 
     /// @notice Users can pledge funds in a contract to be used as proof of subscription.
-    /// @param amount: uint256, Number of tokens applied for
+    /// @param amount Number of tokens applied for
     
     function stake(uint256 amount) public NOT_AMERICAN {
         require(amount > 0, "Amount should be greater than 0");

@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 /// @author Kaso Qian
 /// @notice Check Quadrata for user nationality. Only non-US persons are allowed
 /// @notice Quadrata Documentation here: https://docs.quadrata.com/integration/how-to-integrate/request-privacy-data
-/// @dev audit pending
+
 
 
 import "@quadrata/contracts/interfaces/IQuadReader.sol";
@@ -13,7 +13,7 @@ import "@quadrata/contracts/interfaces/IQuadPassportStore.sol";
 import "@quadrata/contracts/utility/QuadReaderUtils.sol";
 
 contract NotAmerica {
-    using QuadReaderUtils for bytes32;
+
     IQuadReader public reader;
 
     constructor() {
@@ -46,4 +46,5 @@ contract NotAmerica {
         }
         return id;
     }
+    
 }

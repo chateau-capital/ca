@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @title CHΛTΞΛU: DeFi meets Private Capital Markets
-/// @author Kaso Qian
-/// @notice user subscription, short-term redemption, transaction and record function, administrator withdrawal function. 
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -12,55 +9,80 @@ import "./utils/NotAmerica.sol";
 
 import "hardhat/console.sol";
 
-/// @title a contract that manages staking pools for RWA token issuance
+/// @title Staking Pool for RWA Token Issuance
+/// @author Kaso Qian
+/// @dev This contract manages staking pools for RWA token issuance, incorporating a nationality check from the NotAmerica contract to exclude US persons.
+/// @notice Allows for the staking of stablecoin to obtain RWA tokens and redeeming them under specified conditions, excluding US persons.
 
 contract StakingPool is Ownable, NotAmerica {
     using SafeERC20 for IERC20;
     
-    
+    /// token to issue
     IERC20 public issueToken;
-    IERC20 public redeemToekn;
+
+    ///token to redeem
+    IERC20 public redeemToken;
 
 
-    /// @notice Issuance struct that tracks a user's coins being staked in the staking pool
-    /// @custom address user
-
+     /// @dev Struct to track a user's staking details.
     struct Issue {
+        /// The user's address
         address user;
+        /// Amount staked
         uint issueAmount;
+        /// Timestamp of when the stake was made
         uint issueTime;
+        /// Whether the stake is currently active
         bool isStaking;
     }
 
+    /// Mapping of issues by an index
     mapping(uint => Issue) public issues;
+
+    /// Mapping of user addresses to their issue indexes
     mapping(address => uint[]) public userIssueIndex;
 
+    /// End index for tracking issues
     uint public indexEnd;
+    ///// Start index for managing unstaking
     uint public indexStar;
 
+    /// Total amount pending for liquidation
     uint public pendingLiquidation;
 
+    /// Rate for swapping shares to USDT (10000 = 100%). Also the NAV for the underlying asset / USD
     uint public rate; // swap share to usdt - 10000 = 100%
 
+
+    /// @dev Sets the tokens to be issued and redeemed, and the owner of the contract
+    /// @param _issueToken Token to be staked/issued
+    /// @param _redeemToken Token to be redeemed
+    /// @param _owner Owner of the contract
     constructor(
         address _issueToken,
-        address _redeemToekn,
+        address _redeemToken,
         address _owner
     ) Ownable(_owner) {
         issueToken = IERC20(_issueToken);
-        redeemToekn = IERC20(_redeemToekn);
+        redeemToken = IERC20(_redeemToken);
         indexEnd++;
     }
 
+    /// @notice Emitted when a user stakes tokens
     event UserStake(address indexed user, uint amount);
+
+    /// @notice Emitted when a user unstakes tokens
     event UserUnstake(address indexed user, uint amount);
+
+    /// @notice Emitted when admin withdraws tokens from the contract
     event AdminWithdraw(address indexed user, uint withdraw);
+
+    /// @notice Emitted when the swap rate changes
     event RateChange(uint rate);
 
-
-    /// @notice Users can pledge funds in a contract to be used as proof of subscription.
-    /// @param amount Number of tokens applied for
-    
+    /// @notice Stake tokens in the contract
+    /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
+    /// @param amount The amount of tokens to stake
     function stake(uint256 amount) public NOT_AMERICAN {
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -73,8 +95,8 @@ contract StakingPool is Ownable, NotAmerica {
     }
 
 
-    /// @notice Users can withdraw their funds in full at any time before the end of the collection cycle.
-
+    /// @notice Allows users to unstake their tokens
+    /// @dev Iterates over the user's issues to calculate total unstakable amount
     function unstake() public NOT_AMERICAN {
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
@@ -97,14 +119,9 @@ contract StakingPool is Ownable, NotAmerica {
         }
     }
 
-    /// @notice Query the valid subscription information of the user's current turn
-    /// @param user: address, User address for subscription
-    /// @returns   struct Issue {
-                ///    address user: User address for subscription
-                ///    uint issueAmount: Number of tokens spent by the user to subscribe for tokens
-                ///    uint issueTime: Time for users to subscribe
-                ///    bool isStaking: Whether or not the funds were raised
-                /// }
+    /// @notice Queries valid subscription information for the user's current turn
+    /// @param user User address to query subscription info for
+    /// @return Array of Issue structs representing the user's staking info
 
     function getStakingInfo(address user) public view returns (Issue[] memory) {
         require(user != address(0), "Invalid address");
@@ -134,15 +151,14 @@ contract StakingPool is Ownable, NotAmerica {
         return userIssues;
     }
 
-    /// @notice Users of historical batches can sell their RWA shares to those who want to buy them at the moment by using this function, which can be executed if there are enough funds for the current round of subscriptions and they have not been withdrawn.
-    /// @param amount: uint256, Number of RWA assets to be converted
-    
 
+    /// @notice Allows users to swap their RWA shares for another token (Stablecoin)
+    /// @param amount Amount of RWA assets to be converted
     function swap(uint256 amount) external {
         require(amount > 0, "Amount should be greater than 0");
         require(rate > 0, "Rate should be greater than 0");
         require(
-            redeemToekn.balanceOf(msg.sender) >= amount,
+            redeemToken.balanceOf(msg.sender) >= amount,
             "Insufficient balance of share token"
         );
 
@@ -154,7 +170,7 @@ contract StakingPool is Ownable, NotAmerica {
             "Insufficient balance of issue token"
         );
 
-        redeemToekn.safeTransferFrom(msg.sender, address(this), amount);
+        redeemToken.safeTransferFrom(msg.sender, address(this), amount);
 
         for (uint i = indexEnd; i > indexStar; i--) {
             Issue storage issueInfo = issues[i];
@@ -163,11 +179,11 @@ contract StakingPool is Ownable, NotAmerica {
                     if (amountB >= issueInfo.issueAmount) {
                         uint amountA = (issueInfo.issueAmount * 10000) / rate;
                         amountB -= issueInfo.issueAmount;
-                        redeemToekn.safeTransfer(issueInfo.user, amountA);
+                        redeemToken.safeTransfer(issueInfo.user, amountA);
                         issueInfo.isStaking = false;
                     } else {
                         uint amountA = (amountB * 10000) / rate;
-                        redeemToekn.safeTransfer(issueInfo.user, amountA);
+                        redeemToken.safeTransfer(issueInfo.user, amountA);
                         issueInfo.issueAmount -= amountB;
                         amountB = 0;
                     }
@@ -179,9 +195,7 @@ contract StakingPool is Ownable, NotAmerica {
         issueToken.safeTransfer(msg.sender, amountBTotal);
     }
 
-    /// @notice Calling this function extracts the issueToken from the contract and can only be called by administrators.
-
-
+    /// @notice Admin function to withdraw issue tokens from the contract
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
@@ -190,11 +204,8 @@ contract StakingPool is Ownable, NotAmerica {
         emit AdminWithdraw(msg.sender, balance);
     }
 
-
-    /// @notice Set the exchange ratio of swap, 10000 is 100%, only administrator can set it. Tied to NAV of the underlying product
-    /// @param _rate: uint, Trading rate，10000 = 100%
-
-
+    /// @notice Sets the swap rate for converting staked tokens into another token
+    /// @param _rate New swap rate
     function setRate(uint _rate) public onlyOwner {
         rate = _rate;
         emit RateChange(_rate);

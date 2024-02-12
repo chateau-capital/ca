@@ -13,15 +13,31 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/IERC20Burnable.sol";
 import "./utils/NotAmerica.sol";
 
+
+/// @title Vault Pool for RWA Token Redemption
+/// @author Kaso Qian
+/// @notice Manages centralized user redemption function for RWA tokens.
+/// @dev integrates with NotAmerica for nationality checks, uses Pausable for emergency stops.
+
 contract VaultPool is Ownable, NotAmerica,Pausable {
     using SafeERC20 for IERC20Burnable;
 
+    /// @notice The token to be redeemed (stablecoin).
     IERC20Burnable public issueToken;
+
+    /// @notice The RWA token users will burn to redeem the stablecoin.
     IERC20Burnable public shareToekn;
 
+    /// @notice Emitted when a user redeems RWA tokens for stablecoin.
     event UserRedeem(address indexed user, uint withdraw, uint burn);
+
+    /// @notice Emitted when the admin withdraws stablecoin from the contract.
     event AdminWithdraw(address indexed user, uint withdraw);
 
+    /// @dev Initializes the contract with the issue token, share token, and owner.
+    /// @param _issueToken The address of the stablecoin token contract.
+    /// @param _shareToken The address of the RWA token contract.
+    /// @param _owner The address of the contract owner.
     constructor(
         address _issueToken,
         address _shareToekn,
@@ -31,9 +47,8 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         shareToekn = IERC20Burnable(_shareToekn);
     }
 
-    ///@notice Redeem Stablecoin with RWA Assets, by calling this method the user will get Stablecoin and burn RWA tokens.
-    ///@param amount: uint256, amount of RWA coins to redeem
-
+    /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
+    /// @param amount The amount of RWA tokens to redeem.
     function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
         require(amount > 0, "Amount should be greater than 0");
         uint shareTotal = shareToekn.totalSupply();
@@ -48,8 +63,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         emit UserRedeem(msg.sender, withdrawAmount, amount);
     }
 
-    ///@notice The administrator withdraws the stablecoins for the next round of RWA requisitions.
-
+    /// @notice Withdraws stablecoins for the next round of RWA requisitions by the administrator.
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
@@ -57,13 +71,12 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         emit AdminWithdraw(msg.sender, balance);
     }
 
-    ///@notice Suspend user redemptions, callable only by administrators.
-
+    /// @notice Suspends user redemptions, callable only by administrators.
     function pause() public onlyOwner {
         _pause();
     }
 
-    ///@notice Open for user redemption, callable only by administrators.
+    /// @notice Resumes user redemptions, callable only by administrators.
     function unpause() public onlyOwner {
         _unpause();
     }

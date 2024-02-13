@@ -26,7 +26,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     IERC20Burnable public issueToken;
 
     /// @notice The RWA token users will burn to redeem the stablecoin.
-    IERC20Burnable public shareToekn;
+    IERC20Burnable public shareToken;
 
     /// @notice Emitted when a user redeems RWA tokens for stablecoin.
     event UserRedeem(address indexed user, uint withdraw, uint burn);
@@ -40,24 +40,24 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     /// @param _owner The address of the contract owner.
     constructor(
         address _issueToken,
-        address _shareToekn,
+        address _shareToken,
         address _owner
     ) Ownable(_owner) {
         issueToken = IERC20Burnable(_issueToken);
-        shareToekn = IERC20Burnable(_shareToekn);
+        shareToken = IERC20Burnable(_shareToken);
     }
 
     /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
     /// @param amount The amount of RWA tokens to redeem.
     function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
         require(amount > 0, "Amount should be greater than 0");
-        uint shareTotal = shareToekn.totalSupply();
+        uint shareTotal = shareToken.totalSupply();
         uint issueTotal = issueToken.balanceOf(address(this));
         uint withdrawAmount = (amount * issueTotal - 1) / (shareTotal + 1);
 
         require(withdrawAmount > 0 && issueTotal > 0, "withdrawAmount is zero");
-        shareToekn.safeTransferFrom(msg.sender, address(this), amount);
-        shareToekn.burn(amount);
+        shareToken.safeTransferFrom(msg.sender, address(this), amount);
+        shareToken.burn(amount);
         issueToken.safeTransfer(msg.sender, withdrawAmount);
 
         emit UserRedeem(msg.sender, withdrawAmount, amount);

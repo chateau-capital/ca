@@ -33,15 +33,15 @@ contract NotAmerica {
     /// @dev Modifier to restrict function access to non-US persons based on Quadrata passport data.
     /// @notice Checks the caller's country attribute, denying access if the user is from the US.
     modifier NOT_AMERICAN() {
-        IQuadPassportStore.Attribute[] memory attributes = reader.getAttributes(
-            msg.sender,
-            keccak256("COUNTRY")
-        );
+        // IQuadPassportStore.Attribute[] memory attributes = reader.getAttributes(
+        //     msg.sender,
+        //     keccak256("COUNTRY")
+        // );
 
-        require(attributes.length > 0, "REQUIRES_COUNTRY");
+        // require(attributes.length > 0, "REQUIRES_COUNTRY");
 
-        /// Only users residing outside the US may proceed.
-        require(!attributes[0].value.countryIsEqual("US"), "AMERICAN");
+        // /// Only users residing outside the US may proceed.
+        // require(!attributes[0].value.countryIsEqual("US"), "AMERICAN");
         _;
     }
 

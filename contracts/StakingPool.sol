@@ -199,7 +199,7 @@ contract StakingPool is Ownable, NotAmerica {
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
-        indexStar = indexEnd;
+        indexStar = indexEnd - 1;
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }

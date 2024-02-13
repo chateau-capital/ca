@@ -113,6 +113,8 @@ describe("Lock", function () {
       expect(await usdt.balanceOf(owner.address)).to.equal(
         "1500000000000000000"
       );
+      await stakingPool.connect(otherAccount).stake("500000000000000000");
+      await stakingPool.connect(owner).unstake();
     });
     it("Should be able to stake and unstake usdt", async function () {
       const { owner, otherAccount, usdt, stakingPool } = await loadFixture(

@@ -223,9 +223,14 @@ describe("Lock", function () {
       await stakingPool.setRate("9000");
       await stakingPool.connect(otherAccount).stake("1000000000000000000");
 
-      await share.mint([owner.address], ["1250000000000000000"]);
-      await share.approve(stakingPool.target, "1250000000000000000"); // 88
-      expect(await stakingPool.swap("1250000000000000000")).revertedWithCustomError("Insufficient balance of issue token") 
+      await share.mint([owner.address], ["1000000000000000000"]);
+      await share.approve(stakingPool.target, "1000000000000000000"); // 88
+      await stakingPool.swap("1000000000000000000")
+
+      const bal = await share.balanceOf(owner.address);
+      const usdtbal = await usdt.balanceOf(owner.address);
+      expect(bal).to.equal("0");
+      expect(usdtbal).to.equal("1900000000000000000");
       // should.(await stakingPool.swap("1250000000000000000")).to.throw("Insufficient balance of issue token")
       // assert.isRejected(await stakingPool.swap("1250000000000000000"), "Insufficient balance of issue token");
     });

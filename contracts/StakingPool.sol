@@ -45,7 +45,7 @@ contract StakingPool is Ownable, NotAmerica {
     /// End index for tracking issues
     uint public indexEnd;
     ///// Start index for managing unstaking
-    uint public indexStar;
+    uint public indexStart;
 
     /// Total amount pending for liquidation
     uint public pendingLiquidation;
@@ -103,7 +103,7 @@ contract StakingPool is Ownable, NotAmerica {
         uint unstakeAmount;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
-            if (index > indexStar) {
+            if (index > indexStart) {
                 Issue storage issueInfo = issues[index];
                 if (issueInfo.isStaking) {
                     unstakeAmount += issueInfo.issueAmount;
@@ -132,7 +132,7 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStar && issueInfo.isStaking) key++;
+            if (index > indexStart && issueInfo.isStaking) key++;
         }
 
         Issue[] memory userIssues = new Issue[](key);
@@ -142,7 +142,7 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStar && issueInfo.isStaking) {
+            if (index > indexStart && issueInfo.isStaking) {
                 userIssues[key2] = issueInfo;
                 key2++;
             }
@@ -172,7 +172,7 @@ contract StakingPool is Ownable, NotAmerica {
 
         redeemToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        for (uint i = indexEnd; i > indexStar; i--) {
+        for (uint i = indexEnd; i > indexStart; i--) {
             Issue storage issueInfo = issues[i];
             if (issueInfo.isStaking) {
                 if (amountB > 0) {
@@ -187,6 +187,8 @@ contract StakingPool is Ownable, NotAmerica {
                         issueInfo.issueAmount -= amountB;
                         amountB = 0;
                     }
+                } else {
+                    break;
                 }
             }
         }
@@ -199,7 +201,7 @@ contract StakingPool is Ownable, NotAmerica {
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
-        indexStar = indexEnd - 1;
+        indexStart = indexEnd - 1;
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }

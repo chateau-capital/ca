@@ -192,6 +192,8 @@ contract StakingPool is Ownable, NotAmerica {
                 }
             }
         }
+        require(amountB == 0, "Not enough stakers to pay for the swap");
+        require(redeemToken.balanceOf(address(this)) == 0, "Not all redeemTokens were swapped");
 
         pendingLiquidation -= amountBTotal;
         issueToken.safeTransfer(msg.sender, amountBTotal);

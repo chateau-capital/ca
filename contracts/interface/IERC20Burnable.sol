@@ -12,4 +12,5 @@ interface IERC20Burnable is IERC20 {
     /// @dev Destroys `value` tokens from the caller’s account, reducing the total supply.
     /// @param value The amount of token to be burned.
     function burn(uint256 value) external;
+    function decimals() external view returns (uint8);
 }

@@ -87,7 +87,7 @@ contract StakingPool is Ownable, NotAmerica {
     /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
     /// @param amount The amount of tokens to stake
     function stake(uint256 amount) public NOT_AMERICAN reentrancy{
-        require(amount > issueToken.decimals(), "Amount should be greater than 1");
+        require(amount > 10 * 10 ** issueToken.decimals(), "Amount should be greater than 1");
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
         issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);

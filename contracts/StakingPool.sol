@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./utils/NotAmerica.sol";
+import "./interface/IERC20Burnable.sol";
 
 import "hardhat/console.sol";
 
@@ -15,13 +15,13 @@ import "hardhat/console.sol";
 /// @notice Allows for the staking of stablecoin to obtain RWA tokens and redeeming them under specified conditions, excluding US persons.
 
 contract StakingPool is Ownable, NotAmerica {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Burnable;
     
     /// token to issue
-    IERC20 public issueToken;
+    IERC20Burnable public issueToken;
 
     ///token to redeem
-    IERC20 public redeemToken;
+    IERC20Burnable public redeemToken;
 
 
      /// @dev Struct to track a user's staking details.
@@ -45,7 +45,7 @@ contract StakingPool is Ownable, NotAmerica {
     /// End index for tracking issues
     uint public indexEnd;
     ///// Start index for managing unstaking
-    uint public indexStar;
+    uint public indexStart;
 
     /// Total amount pending for liquidation
     uint public pendingLiquidation;
@@ -63,8 +63,8 @@ contract StakingPool is Ownable, NotAmerica {
         address _redeemToken,
         address _owner
     ) Ownable(_owner) {
-        issueToken = IERC20(_issueToken);
-        redeemToken = IERC20(_redeemToken);
+        issueToken = IERC20Burnable(_issueToken);
+        redeemToken = IERC20Burnable(_redeemToken);
         indexEnd++;
     }
 
@@ -84,6 +84,7 @@ contract StakingPool is Ownable, NotAmerica {
     /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
     /// @param amount The amount of tokens to stake
     function stake(uint256 amount) public NOT_AMERICAN {
+        require(amount > issueToken.decimals(), "Amount should be greater than 1");
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
         issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);
@@ -103,7 +104,7 @@ contract StakingPool is Ownable, NotAmerica {
         uint unstakeAmount;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
-            if (index > indexStar) {
+            if (index > indexStart) {
                 Issue storage issueInfo = issues[index];
                 if (issueInfo.isStaking) {
                     unstakeAmount += issueInfo.issueAmount;
@@ -132,7 +133,7 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStar && issueInfo.isStaking) key++;
+            if (index > indexStart && issueInfo.isStaking) key++;
         }
 
         Issue[] memory userIssues = new Issue[](key);
@@ -142,7 +143,7 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStar && issueInfo.isStaking) {
+            if (index > indexStart && issueInfo.isStaking) {
                 userIssues[key2] = issueInfo;
                 key2++;
             }
@@ -172,7 +173,7 @@ contract StakingPool is Ownable, NotAmerica {
 
         redeemToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        for (uint i = indexEnd; i > indexStar; i--) {
+        for (uint i = indexEnd; i > indexStart; i--) {
             Issue storage issueInfo = issues[i];
             if (issueInfo.isStaking) {
                 if (amountB > 0) {
@@ -187,9 +188,13 @@ contract StakingPool is Ownable, NotAmerica {
                         issueInfo.issueAmount -= amountB;
                         amountB = 0;
                     }
+                } else {
+                    break;
                 }
             }
         }
+        require(amountB == 0, "Not enough stakers to pay for the swap");
+        require(redeemToken.balanceOf(address(this)) == 0, "Not all redeemTokens were swapped");
 
         pendingLiquidation -= amountBTotal;
         issueToken.safeTransfer(msg.sender, amountBTotal);
@@ -199,7 +204,7 @@ contract StakingPool is Ownable, NotAmerica {
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
-        indexStar = indexEnd - 1;
+        indexStart = indexEnd - 1;
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }

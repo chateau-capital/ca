@@ -155,7 +155,8 @@ contract StakingPool is Ownable, NotAmerica {
 
     /// @notice Allows users to swap their RWA shares for another token (Stablecoin)
     /// @param amount Amount of RWA assets to be converted
-    function swap(uint256 amount) external {
+    /// @param matchIndex Array of indexes to match the user's staking info and calculate the amount of RWA assets to be converted
+    function swap(uint256 amount, uint[] calldata matchIndex) external {
         require(amount > 0, "Amount should be greater than 0");
         require(rate > 0, "Rate should be greater than 0");
         require(
@@ -173,8 +174,8 @@ contract StakingPool is Ownable, NotAmerica {
 
         redeemToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        for (uint i = indexEnd; i > indexStart; i--) {
-            Issue storage issueInfo = issues[i];
+        for (uint i = 0; i > matchIndex.length; i++) {
+            Issue storage issueInfo = issues[matchIndex[i]];
             if (issueInfo.isStaking) {
                 if (amountB > 0) {
                     if (amountB >= issueInfo.issueAmount) {

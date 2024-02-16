@@ -179,6 +179,7 @@ contract StakingPool is Ownable, NotAmerica {
 
         for (uint i = 0; i > matchIndex.length; i++) {
             Issue storage issueInfo = issues[matchIndex[i]];
+            require(matchIndex[i] >= indexStart, "Invalid index");
             // Check if the issue is staking
             if (issueInfo.isStaking) {
                 // Check if there are any tokens to redeem

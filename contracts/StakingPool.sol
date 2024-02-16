@@ -176,17 +176,26 @@ contract StakingPool is Ownable, NotAmerica {
 
         for (uint i = 0; i > matchIndex.length; i++) {
             Issue storage issueInfo = issues[matchIndex[i]];
+            // Check if the issue is staking
             if (issueInfo.isStaking) {
+                // Check if there are any tokens to redeem
                 if (amountB > 0) {
+                    // Check if the amount of tokens to redeem is greater than the issue amount
                     if (amountB >= issueInfo.issueAmount) {
+                        // Calculate the amount of tokens to redeem
                         uint amountA = (issueInfo.issueAmount * 10000) / rate;
+                        // Transfer the tokens to the user
                         amountB -= issueInfo.issueAmount;
                         redeemToken.safeTransfer(issueInfo.user, amountA);
+                        // Mark the issue as not staking
                         issueInfo.isStaking = false;
                     } else {
+                        // Calculate the amount of tokens to redeem
                         uint amountA = (amountB * 10000) / rate;
+                        // Transfer the tokens to the user
                         redeemToken.safeTransfer(issueInfo.user, amountA);
                         issueInfo.issueAmount -= amountB;
+                        // Set the amount of tokens to redeem to 0
                         amountB = 0;
                     }
                 } else {

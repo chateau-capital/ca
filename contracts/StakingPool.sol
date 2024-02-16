@@ -104,7 +104,7 @@ contract StakingPool is Ownable, NotAmerica {
         uint unstakeAmount;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
-            if (index > indexStart) {
+            if (index >= indexStart) {
                 Issue storage issueInfo = issues[index];
                 if (issueInfo.isStaking) {
                     unstakeAmount += issueInfo.issueAmount;
@@ -205,7 +205,7 @@ contract StakingPool is Ownable, NotAmerica {
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
-        indexStart = indexEnd - 1;
+        indexStart = indexEnd;
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }

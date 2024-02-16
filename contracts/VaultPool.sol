@@ -34,6 +34,9 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     /// @notice Emitted when the admin withdraws stablecoin from the contract.
     event AdminWithdraw(address indexed user, uint withdraw);
 
+    // Reentrancy state to prevent reentrancy attacks
+    bool reentrancyState;
+
     /// @dev Initializes the contract with the issue token, share token, and owner.
     /// @param _issueToken The address of the stablecoin token contract.
     /// @param _shareToken The address of the RWA token contract.
@@ -49,7 +52,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
 
     /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
     /// @param amount The amount of RWA tokens to redeem.
-    function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
+    function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN reentrancy{
         require(amount > 0, "Amount should be greater than 0");
         uint shareTotal = shareToken.totalSupply();
         uint issueTotal = issueToken.balanceOf(address(this));
@@ -79,5 +82,13 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     /// @notice Resumes user redemptions, callable only by administrators.
     function unpause() public onlyOwner {
         _unpause();
+    }
+
+    // Reentrancy guard
+    modifier reentrancy() {
+        require(!reentrancyState, "ReentrancyGuard: reentrant call");
+        reentrancyState = true;
+        _;
+        reentrancyState = false;
     }
 }

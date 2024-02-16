@@ -53,6 +53,9 @@ contract StakingPool is Ownable, NotAmerica {
     /// Rate for swapping shares to USDT (10000 = 100%). Also the NAV for the underlying asset / USD
     uint public rate; // swap share to usdt - 10000 = 100%
 
+    // Reentrancy state to prevent reentrancy attacks
+    bool reentrancyState;
+
 
     /// @dev Sets the tokens to be issued and redeemed, and the owner of the contract
     /// @param _issueToken Token to be staked/issued
@@ -83,7 +86,7 @@ contract StakingPool is Ownable, NotAmerica {
     /// @notice Stake tokens in the contract
     /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
     /// @param amount The amount of tokens to stake
-    function stake(uint256 amount) public NOT_AMERICAN {
+    function stake(uint256 amount) public NOT_AMERICAN reentrancy{
         require(amount > issueToken.decimals(), "Amount should be greater than 1");
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -98,7 +101,7 @@ contract StakingPool is Ownable, NotAmerica {
 
     /// @notice Allows users to unstake their tokens
     /// @dev Iterates over the user's issues to calculate total unstakable amount
-    function unstake() public NOT_AMERICAN {
+    function unstake() public NOT_AMERICAN reentrancy{
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
         uint unstakeAmount;
@@ -156,7 +159,7 @@ contract StakingPool is Ownable, NotAmerica {
     /// @notice Allows users to swap their RWA shares for another token (Stablecoin)
     /// @param amount Amount of RWA assets to be converted
     /// @param matchIndex Array of indexes to match the user's staking info and calculate the amount of RWA assets to be converted
-    function swap(uint256 amount, uint[] calldata matchIndex) external {
+    function swap(uint256 amount, uint[] calldata matchIndex) external reentrancy {
         require(amount > 0, "Amount should be greater than 0");
         require(rate > 0, "Rate should be greater than 0");
         require(
@@ -224,5 +227,12 @@ contract StakingPool is Ownable, NotAmerica {
     function setRate(uint _rate) public onlyOwner {
         rate = _rate;
         emit RateChange(_rate);
+    }
+
+    modifier reentrancy() {
+        require(!reentrancyState, "ReentrancyGuard: reentrant call");
+        reentrancyState = true;
+        _;
+        reentrancyState = false;
     }
 }

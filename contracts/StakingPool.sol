@@ -136,7 +136,7 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStart && issueInfo.isStaking) key++;
+            if (index >= indexStart && issueInfo.isStaking) key++;
         }
 
         Issue[] memory userIssues = new Issue[](key);
@@ -146,7 +146,7 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStart && issueInfo.isStaking) {
+            if (index >= indexStart && issueInfo.isStaking) {
                 userIssues[key2] = issueInfo;
                 key2++;
             }

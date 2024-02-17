@@ -51,7 +51,7 @@ contract StakingPool is Ownable, NotAmerica {
     uint public pendingLiquidation;
 
     /// Rate for swapping shares to USDT (10000 = 100%). Also the NAV for the underlying asset / USD
-    uint public rate; // swap share to usdt - 10000 = 100%
+    // uint public rate; // swap share to usdt - 10000 = 100%
 
     // Reentrancy state to prevent reentrancy attacks
     bool reentrancyState;
@@ -81,7 +81,7 @@ contract StakingPool is Ownable, NotAmerica {
     event AdminWithdraw(address indexed user, uint withdraw);
 
     /// @notice Emitted when the swap rate changes
-    event RateChange(uint rate);
+    // event RateChange(uint rate);
 
     /// @notice Stake tokens in the contract
     /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
@@ -159,60 +159,60 @@ contract StakingPool is Ownable, NotAmerica {
     /// @notice Allows users to swap their RWA shares for another token (Stablecoin)
     /// @param amount Amount of RWA assets to be converted
     /// @param matchIndex Array of indexes to match the user's staking info and calculate the amount of RWA assets to be converted
-    function swap(uint256 amount, uint[] calldata matchIndex) external reentrancy {
-        require(amount > 0, "Amount should be greater than 0");
-        require(rate > 0, "Rate should be greater than 0");
-        require(
-            redeemToken.balanceOf(msg.sender) >= amount,
-            "Insufficient balance of share token"
-        );
+    // function swap(uint256 amount, uint[] calldata matchIndex) external reentrancy {
+    //     require(amount > 0, "Amount should be greater than 0");
+    //     require(rate > 0, "Rate should be greater than 0");
+    //     require(
+    //         redeemToken.balanceOf(msg.sender) >= amount,
+    //         "Insufficient balance of share token"
+    //     );
 
-        uint256 amountB = (amount * rate) / 10000;
-        uint256 amountBTotal = amountB;
+    //     uint256 amountB = (amount * rate) / 10000;
+    //     uint256 amountBTotal = amountB;
 
-        require(
-            pendingLiquidation >= amountB,
-            "Insufficient balance of issue token"
-        );
+    //     require(
+    //         pendingLiquidation >= amountB,
+    //         "Insufficient balance of issue token"
+    //     );
 
-        redeemToken.safeTransferFrom(msg.sender, address(this), amount);
+    //     redeemToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        for (uint i = 0; i > matchIndex.length; i++) {
-            Issue storage issueInfo = issues[matchIndex[i]];
-            require(matchIndex[i] >= indexStart, "Invalid index");
-            // Check if the issue is staking
-            if (issueInfo.isStaking) {
-                // Check if there are any tokens to redeem
-                if (amountB > 0) {
-                    // Check if the amount of tokens to redeem is greater than the issue amount
-                    if (amountB >= issueInfo.issueAmount) {
-                        // Calculate the amount of tokens to redeem
-                        uint amountA = (issueInfo.issueAmount * 10000) / rate;
-                        // Transfer the tokens to the user
-                        amountB -= issueInfo.issueAmount;
-                        redeemToken.safeTransfer(issueInfo.user, amountA);
-                        // Mark the issue as not staking
-                        issueInfo.isStaking = false;
-                    } else {
-                        // Calculate the amount of tokens to redeem
-                        uint amountA = (amountB * 10000) / rate;
-                        // Transfer the tokens to the user
-                        redeemToken.safeTransfer(issueInfo.user, amountA);
-                        issueInfo.issueAmount -= amountB;
-                        // Set the amount of tokens to redeem to 0
-                        amountB = 0;
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-        require(amountB == 0, "Not enough stakers to pay for the swap");
-        require(redeemToken.balanceOf(address(this)) == 0, "Not all redeemTokens were swapped");
+    //     for (uint i = 0; i > matchIndex.length; i++) {
+    //         Issue storage issueInfo = issues[matchIndex[i]];
+    //         require(matchIndex[i] >= indexStart, "Invalid index");
+    //         // Check if the issue is staking
+    //         if (issueInfo.isStaking) {
+    //             // Check if there are any tokens to redeem
+    //             if (amountB > 0) {
+    //                 // Check if the amount of tokens to redeem is greater than the issue amount
+    //                 if (amountB >= issueInfo.issueAmount) {
+    //                     // Calculate the amount of tokens to redeem
+    //                     uint amountA = (issueInfo.issueAmount * 10000) / rate;
+    //                     // Transfer the tokens to the user
+    //                     amountB -= issueInfo.issueAmount;
+    //                     redeemToken.safeTransfer(issueInfo.user, amountA);
+    //                     // Mark the issue as not staking
+    //                     issueInfo.isStaking = false;
+    //                 } else {
+    //                     // Calculate the amount of tokens to redeem
+    //                     uint amountA = (amountB * 10000) / rate;
+    //                     // Transfer the tokens to the user
+    //                     redeemToken.safeTransfer(issueInfo.user, amountA);
+    //                     issueInfo.issueAmount -= amountB;
+    //                     // Set the amount of tokens to redeem to 0
+    //                     amountB = 0;
+    //                 }
+    //             } else {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     require(amountB == 0, "Not enough stakers to pay for the swap");
+    //     require(redeemToken.balanceOf(address(this)) == 0, "Not all redeemTokens were swapped");
 
-        pendingLiquidation -= amountBTotal;
-        issueToken.safeTransfer(msg.sender, amountBTotal);
-    }
+    //     pendingLiquidation -= amountBTotal;
+    //     issueToken.safeTransfer(msg.sender, amountBTotal);
+    // }
 
     /// @notice Admin function to withdraw issue tokens from the contract
     function withdraw() public onlyOwner {
@@ -225,10 +225,10 @@ contract StakingPool is Ownable, NotAmerica {
 
     /// @notice Sets the swap rate for converting staked tokens into another token
     /// @param _rate New swap rate
-    function setRate(uint _rate) public onlyOwner {
-        rate = _rate;
-        emit RateChange(_rate);
-    }
+    // function setRate(uint _rate) public onlyOwner {
+    //     rate = _rate;
+    //     emit RateChange(_rate);
+    // } 
 
     modifier reentrancy() {
         require(!reentrancyState, "ReentrancyGuard: reentrant call");

@@ -24,7 +24,7 @@ module.exports = {
       url: process.env.SEPOLIA_URL,
       accounts: [process.env.SEPOLIA_PRIVATE_KEY]
     },
-    arbitrum:{
+    arbitrumOne:{
       url: `${process.env.ARB_URL}${process.env.ARB_ALCHEMY_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
       saveDeployments: true,

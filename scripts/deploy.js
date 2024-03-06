@@ -12,12 +12,12 @@ async function main() {
 
   const usdtCoin = await hre.ethers.getContractAt("USDT","0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9");
 
-  const QuadReaderUtils = await hre.ethers.deployContract("QuadReaderUtils");
-  const quadReaderUtils = await QuadReaderUtils.waitForDeployment();
+  // const QuadReaderUtils = await hre.ethers.deployContract("QuadReaderUtils");
+  // const quadReaderUtils = await QuadReaderUtils.waitForDeployment();
 
   const Factory = await hre.ethers.deployContract("Factory", {
     libraries: {
-      QuadReaderUtils: quadReaderUtils.target,
+      QuadReaderUtils: "0x122E7d91d384619FF9698F14ebC418DF697a1678",
     },
   });
   const factory = await Factory.waitForDeployment();

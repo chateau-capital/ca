@@ -52,7 +52,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
 
     /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
     /// @param amount The amount of RWA tokens to redeem.
-    function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN reentrancy{
+    function redeem(uint256 amount) public whenNotPaused NOT_AMERICAN reentrancy{
         require(amount > 0, "Amount should be greater than 0");
         uint shareTotal = shareToken.totalSupply();
         uint issueTotal = issueToken.balanceOf(address(this));

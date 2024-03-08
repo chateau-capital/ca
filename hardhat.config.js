@@ -20,29 +20,20 @@ module.exports = {
   },
 
   networks: {
-    // hardhat: {
-    //   forking: {
-    //     url: "https://eth-mainnet.alchemyapi.io/v2/your-api-key",
-    //     blockNumber: 13000000,
-    //   },
-    // },
-    // sepolia: {
-    //   url: process.env.SEPOLIA_URL,
-    //   accounts: [process.env.SEPOLIA_PRIVATE_KEY]
-    // },
-    // bera: {
-    //   url: "https://artio.rpc.berachain.com/",
-    //   chainId: 80085,
-    //   accounts: [
-    //     "",
-    //   ],
-    // },
+    sepolia: {
+      url: process.env.SEPOLIA_URL,
+      accounts: [process.env.SEPOLIA_PRIVATE_KEY]
+    },
+    arbitrumOne:{
+      url: `https://1rpc.io/arb`,
+      accounts: [process.env.PRIVATE_KEY],
+      saveDeployments: true,
+      tags: ["arbitrum"],
+    },
     arbitrumSepolia: {
       url: `${process.env.ARB_SEPOLIA_NODE}${process.env.ARB_SEPOLIA_ALCHEMY_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
       saveDeployments: true,
-      // chainId: process.env.ARB_SEPLIA_CHAIN_ID,
-      gasPrice: 1_600_000_000,
       tags: ["arbitrumSepolia"],
     },
   },
@@ -51,7 +42,9 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
       etherscan: process.env.ETHERSCAN_API_KEY || "",
+      arbitrumOne: process.env.ARBSCAN_APIKEY || "",
       arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
    },
     customChains: [

@@ -31,7 +31,7 @@ contract VaultPool is Ownable, NotAmerica, Pausable {
     /// @notice Tracks the price for $1 USDT in share invested since inception of the Fund for this contract.
     /// @notice Updated periodically according to fund administrator reports. Saved as Price * 10 ** 6 to match USDT
     /// @dev Calculate the current value of RWA Tokens where: Net Asset Value = Price / 1000000 * Total RWA Tokens
-    uint256 public price = 1000000;
+    uint256 public price = 1e6;
 
     /// @notice Emitted when the admin updates the price for the RWA Token
     event UpdatePrice(address indexed user, uint256 price);

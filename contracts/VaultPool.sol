@@ -13,13 +13,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/IERC20Burnable.sol";
 import "./utils/NotAmerica.sol";
 
-
 /// @title Vault Pool for RWA Token Redemption
 /// @author Kaso Qian & Hao Jun Tan
 /// @notice Manages centralized user redemption function for RWA tokens.
 /// @dev integrates with NotAmerica for nationality checks, uses Pausable for emergency stops.
 
-contract VaultPool is Ownable, NotAmerica,Pausable {
+contract VaultPool is Ownable, NotAmerica, Pausable {
     using SafeERC20 for IERC20Burnable;
 
     /// @notice The token to be redeemed (stablecoin).
@@ -29,8 +28,8 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     IERC20Burnable public shareToken;
 
     /// Ammendment!
-    /// @notice Tracks the price for $1 USDT in share invested since inception of the Fund for this contract. 
-    /// @notice Updated periodically according to fund administrator reports. Saved as Price * 10 ** 6 to match USDT 
+    /// @notice Tracks the price for $1 USDT in share invested since inception of the Fund for this contract.
+    /// @notice Updated periodically according to fund administrator reports. Saved as Price * 10 ** 6 to match USDT
     /// @dev Calculate the current value of RWA Tokens where: Net Asset Value = Price / 1000000 * Total RWA Tokens
     uint256 public price = 1000000;
 
@@ -58,24 +57,27 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         issueToken = IERC20Burnable(_issueToken);
         shareToken = IERC20Burnable(_shareToken);
     }
-function uint256ToString(uint256 value) internal pure returns (string memory) {
-    if (value == 0) {
-        return "0";
+
+    function uint256ToString(
+        uint256 value
+    ) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits--;
+            buffer[digits] = bytes1(uint8(48 + (value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
-    uint256 temp = value;
-    uint256 digits;
-    while (temp != 0) {
-        digits++;
-        temp /= 10;
-    }
-    bytes memory buffer = new bytes(digits);
-    while (value != 0) {
-        digits--;
-        buffer[digits] = bytes1(uint8(48 + value % 10));
-        value /= 10;
-    }
-    return string(buffer);
-}
 
     /// @notice Updates Price of the RWA Tokens according to fund or asset manager reports
     function updatePrice(uint256 _newPrice) public onlyOwner {
@@ -86,26 +88,29 @@ function uint256ToString(uint256 value) internal pure returns (string memory) {
     /// FIX For redeem
     /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
     /// @param amount The amount of RWA tokens to redeem.
-    function redeem(uint256 amount) public whenNotPaused NOT_AMERICAN reentrancy {
-            require(amount > 0, "Amount should be greater than 0");
+    function redeem(
+        uint256 amount
+    ) public whenNotPaused NOT_AMERICAN reentrancy {
+        require(amount > 0, "Amount should be greater than 0");
 
-            // determines the correct amount of USDT owed to the user based on amount of RWA tokens they have
-            uint redeemAmount = price / 1000000 * amount;
-            uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
+        // determines the correct amount of USDT owed to the user based on amount of RWA tokens they have
+        uint redeemAmount = (price / 1000000) * amount;
+        uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
 
-            require(redeemAmount <= stablecoinAvailableTotal, string.concat("withdraw Amount exceeds available liquidity. Please try less than ", uint256ToString(stablecoinAvailableTotal))); 
-            
-            shareToken.safeTransferFrom(msg.sender, address(this), amount);
-            shareToken.burn(amount);
-            issueToken.safeTransfer(msg.sender, redeemAmount);
+        require(
+            redeemAmount <= stablecoinAvailableTotal,
+            string.concat(
+                "withdraw Amount exceeds available liquidity. Please try less than ",
+                uint256ToString(stablecoinAvailableTotal)
+            )
+        );
 
-        emit UserRedeem(msg.sender,redeemAmount, amount);
+        shareToken.safeTransferFrom(msg.sender, address(this), amount);
+        shareToken.burn(amount);
+        issueToken.safeTransfer(msg.sender, redeemAmount);
 
-        }
-
-   
-
-   
+        emit UserRedeem(msg.sender, redeemAmount, amount);
+    }
 
     /// @notice Withdraws stablecoins for the next round of RWA requisitions by the administrator.
     function withdraw() public onlyOwner {

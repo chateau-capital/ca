@@ -51,7 +51,10 @@ contract StakingPool is Ownable, NotAmerica {
     uint public pendingLiquidation;
 
     /// Rate for swapping shares to USDT (10000 = 100%). Also the NAV for the underlying asset / USD
-    uint public rate; // swap share to usdt - 10000 = 100%
+    // uint public rate; // swap share to usdt - 10000 = 100%
+
+    // Reentrancy state to prevent reentrancy attacks
+    bool reentrancyState;
 
 
     /// @dev Sets the tokens to be issued and redeemed, and the owner of the contract
@@ -77,14 +80,13 @@ contract StakingPool is Ownable, NotAmerica {
     /// @notice Emitted when admin withdraws tokens from the contract
     event AdminWithdraw(address indexed user, uint withdraw);
 
-    /// @notice Emitted when the swap rate changes
-    event RateChange(uint rate);
-
     /// @notice Stake tokens in the contract
     /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
     /// @param amount The amount of tokens to stake
-    function stake(uint256 amount) public NOT_AMERICAN {
-        require(amount > issueToken.decimals(), "Amount should be greater than 1");
+
+    function stake(uint256 amount) public NOT_AMERICAN reentrancy{
+        require(amount >= 10 * 10 ** issueToken.decimals(), "Amount should be greater than 10");
+
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
         issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);
@@ -98,13 +100,15 @@ contract StakingPool is Ownable, NotAmerica {
 
     /// @notice Allows users to unstake their tokens
     /// @dev Iterates over the user's issues to calculate total unstakable amount
-    function unstake() public NOT_AMERICAN {
+    function unstake() public NOT_AMERICAN reentrancy{
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
         uint unstakeAmount;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
-            if (index > indexStart) {
+
+            if (index >= indexStart) {
+
                 Issue storage issueInfo = issues[index];
                 if (issueInfo.isStaking) {
                     unstakeAmount += issueInfo.issueAmount;
@@ -133,7 +137,9 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStart && issueInfo.isStaking) key++;
+
+            if (index >= indexStart && issueInfo.isStaking) key++;
+
         }
 
         Issue[] memory userIssues = new Issue[](key);
@@ -143,7 +149,9 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
-            if (index > indexStart && issueInfo.isStaking) {
+
+            if (index >= indexStart && issueInfo.isStaking) {
+
                 userIssues[key2] = issueInfo;
                 key2++;
             }
@@ -153,66 +161,21 @@ contract StakingPool is Ownable, NotAmerica {
     }
 
 
-    /// @notice Allows users to swap their RWA shares for another token (Stablecoin)
-    /// @param amount Amount of RWA assets to be converted
-    function swap(uint256 amount) external {
-        require(amount > 0, "Amount should be greater than 0");
-        require(rate > 0, "Rate should be greater than 0");
-        require(
-            redeemToken.balanceOf(msg.sender) >= amount,
-            "Insufficient balance of share token"
-        );
-
-        uint256 amountB = (amount * rate) / 10000;
-        uint256 amountBTotal = amountB;
-
-        require(
-            pendingLiquidation >= amountB,
-            "Insufficient balance of issue token"
-        );
-
-        redeemToken.safeTransferFrom(msg.sender, address(this), amount);
-
-        for (uint i = indexEnd; i > indexStart; i--) {
-            Issue storage issueInfo = issues[i];
-            if (issueInfo.isStaking) {
-                if (amountB > 0) {
-                    if (amountB >= issueInfo.issueAmount) {
-                        uint amountA = (issueInfo.issueAmount * 10000) / rate;
-                        amountB -= issueInfo.issueAmount;
-                        redeemToken.safeTransfer(issueInfo.user, amountA);
-                        issueInfo.isStaking = false;
-                    } else {
-                        uint amountA = (amountB * 10000) / rate;
-                        redeemToken.safeTransfer(issueInfo.user, amountA);
-                        issueInfo.issueAmount -= amountB;
-                        amountB = 0;
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-        require(amountB == 0, "Not enough stakers to pay for the swap");
-        require(redeemToken.balanceOf(address(this)) == 0, "Not all redeemTokens were swapped");
-
-        pendingLiquidation -= amountBTotal;
-        issueToken.safeTransfer(msg.sender, amountBTotal);
-    }
-
     /// @notice Admin function to withdraw issue tokens from the contract
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
-        indexStart = indexEnd - 1;
+
+        indexStart = indexEnd;
+
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }
 
-    /// @notice Sets the swap rate for converting staked tokens into another token
-    /// @param _rate New swap rate
-    function setRate(uint _rate) public onlyOwner {
-        rate = _rate;
-        emit RateChange(_rate);
+    modifier reentrancy() {
+        require(!reentrancyState, "ReentrancyGuard: reentrant call");
+        reentrancyState = true;
+        _;
+        reentrancyState = false;
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /// @title CHΛTΞΛU: DeFi meets Private Capital Markets
-/// @author Kaso Qian
+/// @author Kaso Qian & Hao Jun Tan
 /// @notice  Contract that handles centralized user redemption function for RWA tokens
 /// @dev audit pending
 
@@ -15,7 +15,7 @@ import "./utils/NotAmerica.sol";
 
 
 /// @title Vault Pool for RWA Token Redemption
-/// @author Kaso Qian
+/// @author Kaso Qian & Hao Jun Tan
 /// @notice Manages centralized user redemption function for RWA tokens.
 /// @dev integrates with NotAmerica for nationality checks, uses Pausable for emergency stops.
 
@@ -28,11 +28,23 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     /// @notice The RWA token users will burn to redeem the stablecoin.
     IERC20Burnable public shareToken;
 
+    /// Ammendment!
+    /// @notice Tracks the price for $1 USDT in share invested since inception of the Fund for this contract. 
+    /// @notice Updated periodically according to fund administrator reports. Saved as Price * 10 ** 6 to match USDT 
+    /// @dev Calculate the current value of RWA Tokens where: Net Asset Value = Price / 1000000 * Total RWA Tokens
+    uint256 public price = 1000000;
+
+    /// @notice Emitted when the admin updates the price for the RWA Token
+    event UpdatePrice(address indexed user, uint256 price);
+
     /// @notice Emitted when a user redeems RWA tokens for stablecoin.
     event UserRedeem(address indexed user, uint withdraw, uint burn);
 
     /// @notice Emitted when the admin withdraws stablecoin from the contract.
     event AdminWithdraw(address indexed user, uint withdraw);
+
+    // Reentrancy state to prevent reentrancy attacks
+    bool reentrancyState;
 
     /// @dev Initializes the contract with the issue token, share token, and owner.
     /// @param _issueToken The address of the stablecoin token contract.
@@ -47,21 +59,35 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         shareToken = IERC20Burnable(_shareToken);
     }
 
+    /// @notice Updates Price of the RWA Tokens according to fund or asset manager reports
+    function updatePrice(uint256 _newPrice) public onlyOwner {
+        price = _newPrice;
+        emit UpdatePrice(msg.sender, price);
+    }
+
+    /// FIX For redeem
     /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
     /// @param amount The amount of RWA tokens to redeem.
-    function reedem(uint256 amount) public whenNotPaused NOT_AMERICAN{
-        require(amount > 0, "Amount should be greater than 0");
-        uint shareTotal = shareToken.totalSupply();
-        uint issueTotal = issueToken.balanceOf(address(this));
-        uint withdrawAmount = (amount * issueTotal - 1) / (shareTotal + 1);
+    function redeem(uint256 amount) public whenNotPaused NOT_AMERICAN reentrancy {
+            require(amount > 0, "Amount should be greater than 0");
 
-        require(withdrawAmount > 0 && issueTotal > 0, "withdrawAmount is zero");
-        shareToken.safeTransferFrom(msg.sender, address(this), amount);
-        shareToken.burn(amount);
-        issueToken.safeTransfer(msg.sender, withdrawAmount);
+            // determines the correct amount of USDT owed to the user based on amount of RWA tokens they have
+            uint redeemAmount = price / 1000000 * amount;
+            uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
 
-        emit UserRedeem(msg.sender, withdrawAmount, amount);
-    }
+            require(redeemAmount <= stablecoinAvailableTotal, string.concat("withdraw Amount exceeds available liquidity. Please try less than ", stablecoinAvailableTotal)); 
+            
+            shareToken.safeTransferFrom(msg.sender, address(this), amount);
+            shareToken.burn(amount);
+            issueToken.safeTransfer(msg.sender, redeemAmount);
+
+        emit UserRedeem(msg.sender,redeemAmount, amount);
+
+        }
+
+   
+
+   
 
     /// @notice Withdraws stablecoins for the next round of RWA requisitions by the administrator.
     function withdraw() public onlyOwner {
@@ -79,5 +105,13 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     /// @notice Resumes user redemptions, callable only by administrators.
     function unpause() public onlyOwner {
         _unpause();
+    }
+
+    // Reentrancy guard
+    modifier reentrancy() {
+        require(!reentrancyState, "ReentrancyGuard: reentrant call");
+        reentrancyState = true;
+        _;
+        reentrancyState = false;
     }
 }

@@ -58,6 +58,24 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
         issueToken = IERC20Burnable(_issueToken);
         shareToken = IERC20Burnable(_shareToken);
     }
+function uint256ToString(uint256 value) internal pure returns (string memory) {
+    if (value == 0) {
+        return "0";
+    }
+    uint256 temp = value;
+    uint256 digits;
+    while (temp != 0) {
+        digits++;
+        temp /= 10;
+    }
+    bytes memory buffer = new bytes(digits);
+    while (value != 0) {
+        digits--;
+        buffer[digits] = bytes1(uint8(48 + value % 10));
+        value /= 10;
+    }
+    return string(buffer);
+}
 
     /// @notice Updates Price of the RWA Tokens according to fund or asset manager reports
     function updatePrice(uint256 _newPrice) public onlyOwner {
@@ -75,7 +93,7 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
             uint redeemAmount = price / 1000000 * amount;
             uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
 
-            require(redeemAmount <= stablecoinAvailableTotal, string.concat("withdraw Amount exceeds available liquidity. Please try less than ", stablecoinAvailableTotal)); 
+            require(redeemAmount <= stablecoinAvailableTotal, string.concat("withdraw Amount exceeds available liquidity. Please try less than ", uint256ToString(stablecoinAvailableTotal))); 
             
             shareToken.safeTransferFrom(msg.sender, address(this), amount);
             shareToken.burn(amount);

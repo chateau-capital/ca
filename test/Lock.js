@@ -110,14 +110,15 @@ describe("Lock", function () {
       const getStakingInfo = await stakingPool.getStakingInfo(owner.address);
       expect(getStakingInfo.length).to.equal(1);
     });
-    // TODO test changes for redeem here
     it("Should be redeem RWA share token", async function () {
       const { owner, otherAccount, usdt, vaultPool, share } = await loadFixture(deployOneYearLockFixture);
-      expect(await usdt.balanceOf(owner.address)).to.equal(TETHER_STARTING_BALANCE);
       await usdt.transfer(vaultPool.target, AMOUNT);
       await share.mint([owner.address], [AMOUNT]);
-      await share.approve(vaultPool.target, "100000000000000000");
-      await vaultPool.redeem("100000000000000000");
+      await share.approve(vaultPool.target, AMOUNT);
+      expect(await share.balanceOf(owner.address)).to.equal(AMOUNT);
+      expect(await usdt.balanceOf(owner.address)).to.equal("450000000000000000000");
+      await vaultPool.redeem(AMOUNT);
+      expect(await usdt.balanceOf(owner.address)).to.equal(TETHER_STARTING_BALANCE);
       expect(await share.balanceOf(owner.address)).to.equal("0");
     });
     it("Should manager can withdraw usdt from vault", async function () {

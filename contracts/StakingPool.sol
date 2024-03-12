@@ -83,8 +83,10 @@ contract StakingPool is Ownable, NotAmerica {
     /// @notice Stake tokens in the contract
     /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
     /// @param amount The amount of tokens to stake
+
     function stake(uint256 amount) public NOT_AMERICAN reentrancy{
         require(amount >= 10 * 10 ** issueToken.decimals(), "Amount should be greater than 10");
+
         require(amount > 0, "Amount should be greater than 0");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
         issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);
@@ -104,7 +106,9 @@ contract StakingPool is Ownable, NotAmerica {
         uint unstakeAmount;
         for (uint i; i < userIssueIndexs.length; i++) {
             uint index = userIssueIndexs[i];
+
             if (index >= indexStart) {
+
                 Issue storage issueInfo = issues[index];
                 if (issueInfo.isStaking) {
                     unstakeAmount += issueInfo.issueAmount;
@@ -133,7 +137,9 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
+
             if (index >= indexStart && issueInfo.isStaking) key++;
+
         }
 
         Issue[] memory userIssues = new Issue[](key);
@@ -143,7 +149,9 @@ contract StakingPool is Ownable, NotAmerica {
             uint index = userIssueIndexs[i];
             Issue memory issueInfo = issues[index];
 
+
             if (index >= indexStart && issueInfo.isStaking) {
+
                 userIssues[key2] = issueInfo;
                 key2++;
             }
@@ -152,11 +160,14 @@ contract StakingPool is Ownable, NotAmerica {
         return userIssues;
     }
 
+
     /// @notice Admin function to withdraw issue tokens from the contract
     function withdraw() public onlyOwner {
         uint balance = issueToken.balanceOf(address(this));
         issueToken.safeTransfer(msg.sender, balance);
+
         indexStart = indexEnd;
+
         pendingLiquidation = 0;
         emit AdminWithdraw(msg.sender, balance);
     }

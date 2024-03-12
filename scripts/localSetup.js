@@ -1,8 +1,7 @@
-
 const hre = require("hardhat");
 
 async function main() {
-  const USDT = await hre.ethers.getContractFactory("StableInstance");
+  const USDT = await hre.ethers.getContractFactory("USDT");
   const usdtCoin = await USDT.deploy("1000000"); // Deploying USDT contract
   const QuadReaderUtils = await hre.ethers.getContractFactory("QuadReaderUtils");
   const quadReaderUtils = await QuadReaderUtils.deploy(); // Deploying USDT contract
@@ -21,7 +20,7 @@ async function main() {
     stakingPool: Fund[1],
     vaultPool: Fund[2],
     factory: factory.target,
-    quadReaderUtils: await quadReaderUtils.getAddress()
+    quadReaderUtils: await quadReaderUtils.getAddress(),
   });
 }
 

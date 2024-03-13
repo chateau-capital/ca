@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./TokenVault.sol";
+import "./USYCTokenVault.sol";
 import "../coin/Share.sol";
 
 /// @title CHΛTΞΛU: DeFi meets Private Capital Markets
@@ -14,9 +14,6 @@ contract TokenVaultFactory is Ownable {
     constructor() Ownable(msg.sender) {}
 
     /// @notice Event emitted when a new fund is created.
-    /// @param vaultPool Address of the created VaultPool contract.
-    /// @param stakingPool Address of the created StakingPool contract.
-    /// @param share Address of the created Share token contract.
     /// @param manager Address of the manager or owner of the new fund.
     event NewFundCreated(address indexed tokenVault, address manager);
 
@@ -40,21 +37,20 @@ contract TokenVaultFactory is Ownable {
     /// @dev This function deploys new Share, StakingPool, and VaultPool contracts, and sets up their initial configurations including ownership and associations.
     /// @param name The name of the new fund (and its Share token).
     /// @param symbol The ticker symbol of the new fund's Share token.
-    /// @return share The address of the newly created Share token contract.
-    /// @return stakingPool The address of the newly created StakingPool contract.
-    /// @return vaultPool The address of the newly created VaultPool contract.
 
     function NewVault(
         string memory name,
         string memory symbol,
         address shareAddress
     ) public onlyOwner returns (address tokenVault) {
-        // share = address(new Share(name, symbol));
-        tokenVault = new TokenVault(IERC20(shareAddress));
+        // shareAddress = address(new Share(name, symbol));
+        tokenVault = address(
+            new USYCTokenVault(IERC20(shareAddress), name, symbol)
+        );
 
         // Share(share).setVault(address(vaultPool));
         // Share(share).transferOwnership(msg.sender);
 
-        emit NewFundCreated(tokenVault, msg.sender);
+        // emit NewFundCreated(tokenVault, msg.sender);
     }
 }

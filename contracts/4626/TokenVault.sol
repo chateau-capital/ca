@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /**
  * @dev Implementation of the ERC-4626 "Tokenized Vault Standard" as defined in
  * https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
+ 
  *
  * This extension allows the minting and burning of "shares" (represented using the ERC-20 inheritance) in exchange for
  * underlying "assets" through standardized {deposit}, {mint}, {redeem} and {burn} workflows. This contract extends
@@ -48,7 +49,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-contract TokenVault is ERC20, IERC4626 {
+abstract contract TokenVault is ERC20, IERC4626 {
     using Math for uint256;
 
     IERC20 private immutable _asset;
@@ -85,7 +86,7 @@ contract TokenVault is ERC20, IERC4626 {
     /**
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC-20 or ERC-777).
      */
-    constructor(IERC20 asset_) ERC20("vault", "shares") {
+    constructor(IERC20 asset_) {
         (bool success, uint8 assetDecimals) = _tryGetAssetDecimals(asset_);
         _underlyingDecimals = success ? assetDecimals : 18;
         _asset = asset_;

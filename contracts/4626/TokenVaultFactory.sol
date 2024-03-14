@@ -44,13 +44,11 @@ contract TokenVaultFactory is Ownable {
         address shareAddress
     ) public onlyOwner returns (address tokenVault) {
         // shareAddress = address(new Share(name, symbol));
-        tokenVault = address(
-            new USYCTokenVault(IERC20(shareAddress), name, symbol)
-        );
-
+        // tokenVault = address(
+        //     new USYCTokenVault(IERC20(shareAddress), name, symbol)
+        // );
         // Share(share).setVault(address(vaultPool));
         // Share(share).transferOwnership(msg.sender);
-
         // emit NewFundCreated(tokenVault, msg.sender);
     }
 }

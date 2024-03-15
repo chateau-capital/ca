@@ -70,15 +70,16 @@ contract VaultPool is Ownable, NotAmerica,Pausable {
     /// @param amount The amount of RWA tokens to redeem.
     function redeem(uint256 amount) public whenNotPaused NOT_AMERICAN reentrancy {
             require(amount > 0, "Amount should be greater than 0");
-
+            require(redeemAmount <= stablecoinAvailableTotal, string.concat("withdraw Amount exceeds available liquidity. Please try less than ", stablecoinAvailableTotal)); 
+        
             // determines the correct amount of USDT owed to the user based on amount of RWA tokens they have
             uint redeemAmount = (price / 1000000) * amount;
             uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
-
-            require(redeemAmount <= stablecoinAvailableTotal, string.concat("withdraw Amount exceeds available liquidity. Please try less than ", stablecoinAvailableTotal)); 
             
+
             shareToken.safeTransferFrom(msg.sender, address(this), amount);
             shareToken.burn(amount);
+
             issueToken.safeTransfer(msg.sender, redeemAmount);
 
         emit UserRedeem(msg.sender,redeemAmount, amount);

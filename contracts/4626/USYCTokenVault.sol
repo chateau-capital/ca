@@ -3,13 +3,34 @@ import "./TokenVault.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 contract USYCTokenVault is TokenVault, Ownable {
     mapping(address => uint256) public depositAmount;
+    mapping(address => uint256) public shareAmountToRedeem;
     mapping(address => string) public status;
-    mapping(address => uint256) public shareAmount;
+    address[] public pendingDepositAddresses;
+    address[] public pendingWithdrawAddresses;
     IERC20 public paymentToken;
-    event DepositsConfirmed(address user, uint256 amount, uint256 shares);
+    event DepositPending(address user, uint256 amount);
+    event DepositConfirmed(address user, uint256 amount);
+    event WithdrawPending(address user, uint256 shares);
+    event WithdrawConfirmed(address user, uint256 shares);
+    function addPendingDepositAddress(address _address) private {
+        pendingDepositAddresses.push(_address);
+    }
+    function resetPendingDepositAddresses() private {
+        delete pendingDepositAddresses;
+    }
+    function addPendingWithdrawAddress(address _address) private {
+        pendingWithdrawAddresses.push(_address);
+    }
+    function resetPendingWithdrawAddresses() private {
+        delete pendingWithdrawAddresses;
+    }
     // Users call this function to make a deposit
     function preDeposit(uint256 amount) public {
         require(amount > 0, "Deposit must be greater than 0");
+        require(
+            paymentToken.balanceOf(msg.sender) >= amount,
+            "amount is greater than user balance"
+        );
         require(
             depositAmount[msg.sender] == 0,
             "Already have a pending deposit"
@@ -23,71 +44,67 @@ contract USYCTokenVault is TokenVault, Ownable {
         );
         depositAmount[msg.sender] = amount;
         status[msg.sender] = "DepositPending";
-        // No shares are issued at this point
+        addPendingDepositAddress(msg.sender);
+        emit DepositConfirmed(msg.sender, amount);
     }
 
     // Admin calls this function to confirm deposits and issue shares
-    function adminConfirmDeposit(address[] calldata users) public onlyOwner {
-        for (uint i = 0; i < users.length; i++) {
-            address user = users[i];
+    function executeDeposit() public onlyOwner {
+        for (uint i = 0; i < pendingDepositAddresses.length; i++) {
+            address user = pendingDepositAddresses[i];
             uint256 amount = depositAmount[user];
             require(amount > 0, "No pending deposit");
             require(
                 compareStrings(status[user], "DepositPending"),
-                "Deposit already confirmed"
+                "No pending deposit"
             );
             // Convert the deposited amount to shares
-            uint256 shares = _convertToShares(amount, Math.Rounding.Floor);
+            //TODO find conversion for token amount into asset
+            // uint256 shares = _convertToShares(amount, Math.Rounding.Floor);
             // Mint shares to the user
-            _mint(user, shares);
+            _mint(user, amount);
             // Update the user's deposit status to confirmed
-            status[msg.sender] = "DepositConfirmed";
+            status[user] = "DepositConfirmed";
+            depositAmount[user] = 0;
             // Emit an event or take other actions as needed
-            emit DepositsConfirmed(users[i], amount, shares);
+            emit DepositConfirmed(pendingDepositAddresses[i], amount);
         }
+        resetPendingDepositAddresses();
     }
 
-    function preWithdraw() public {
-        uint256 shareBalance = balanceOf(msg.sender); // Get the user's share balance
-        require(
-            shareBalance == depositAmount[msg.sender],
-            "You have no shares to withdraw"
-        );
-        require(depositAmount[msg.sender] > 0, "No deposit to withdraw");
-        require(
-            compareStrings(status[msg.sender], "DepositConfirmed"),
-            "Deposit not confirmed, cannot withdraw"
-        );
-
-        // Assuming _burn function is available and it burns the user's shares equivalent to their deposit
-        _burn(msg.sender, balanceOf(msg.sender));
-        status[msg.sender] = "WithdrawPending";
-        // Additional logic to actually return the deposited assets to the user should be implemented here
+    function preWithdraw(uint256 amount) public {
+        uint256 shares = balanceOf(msg.sender); // Get the user's share balance
+        require(shares >= amount, "amount is greater than balance");
+        require(shares > 0, "You have no shares to withdraw");
+        _burn(msg.sender, amount);
+        shareAmountToRedeem[msg.sender] =
+            amount +
+            shareAmountToRedeem[msg.sender];
+        addPendingWithdrawAddress(msg.sender);
+        emit WithdrawPending(msg.sender, shareAmountToRedeem[msg.sender]);
     }
 
-    function adminConfirmWithdraw(address[] calldata users) public onlyOwner {
-        for (uint i = 0; i < users.length; i++) {
-            address user = users[i];
-            uint256 withdrawAmount = shareAmount[user];
-            require(withdrawAmount > 0, "No pending withdrawal");
-            require(
-                compareStrings(status[user], "WithdrawPending"),
-                "user is not availble to withdraw"
-            );
+    function executeWithdraw() public onlyOwner {
+        for (uint i = 0; i < pendingWithdrawAddresses.length; i++) {
+            address user = pendingWithdrawAddresses[i];
+            uint256 withdrawAmount = shareAmountToRedeem[user];
+            // require(withdrawAmount > 0, "No pending withdrawal");
             // Transfer the deposited asset back to the user.
             // Ensure `paymentToken` is the ERC20 token users deposited.
+            //TODO convert shares to paymentToken
             SafeERC20.safeTransfer(
                 paymentToken,
                 user,
-                depositAmount[msg.sender]
+                withdrawAmount // TODO
             );
             // Mark the withdrawal as confirmed
             status[user] = "WithdrawConfirmed";
             // Reset the user's pending withdrawal amount
-            depositAmount[user] = 0;
-            shareAmount[user] = 0;
+            shareAmountToRedeem[user] = 0;
+            emit WithdrawConfirmed(user, withdrawAmount);
             // Emit an event or take other actions as needed
         }
+        resetPendingWithdrawAddresses();
     }
     constructor(
         IERC20 asset_,
@@ -96,7 +113,7 @@ contract USYCTokenVault is TokenVault, Ownable {
         string memory name,
         string memory symbol
     ) TokenVault(asset_) ERC20(name, symbol) Ownable(_owner) {
-        paymentToken = _paymentToken;
+        paymentToken = IERC20(_paymentToken);
     }
     //helpers
     function compareStrings(

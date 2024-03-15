@@ -45,79 +45,91 @@ describe("TokenVault", function () {
 
   describe("preDeposit", function () {
     it("should allow users to pre-deposit tokens", async function () {
-      const { user1, user2, token, tokenVault } = await loadFixture(deployTokenVaultFixture);
+      const { user1, user2, token, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);
+      console.log(await tokenVault.paymentToken());
+      console.log(token.target);
+      // await token.connect(user1).approve(tokenVault.target, AMOUNT);
       await token.connect(user1).approve(tokenVault.target, AMOUNT);
       expect(await token.balanceOf(user1)).to.equal(AMOUNT);
       await tokenVault.connect(user1).preDeposit(AMOUNT);
-      expect(await tokenVault.pendingDeposits(user1.address)).to.equal(AMOUNT);
+      expect(await tokenVault.depositAmount(user1.address)).to.equal(AMOUNT);
       expect(await token.balanceOf(user1)).to.equal("0");
-      console.log(tokenVault.target);
       expect(await token.balanceOf(tokenVault.target)).to.equal(AMOUNT);
       // user 2 flow
       await token.connect(user2).approve(tokenVault.target, AMOUNT);
       expect(await token.balanceOf(user2)).to.equal(AMOUNT);
       await tokenVault.connect(user2).preDeposit(AMOUNT);
-      expect(await tokenVault.pendingDeposits(user2.address)).to.equal(AMOUNT);
+      expect(await tokenVault.depositAmount(user2.address)).to.equal(AMOUNT);
       expect(await token.balanceOf(user2)).to.equal("0");
       expect(await token.balanceOf(tokenVault.target)).to.equal(DOUBLE_AMOUNT);
     });
   });
   describe("USYCTokenVault deposit process", function () {
     it("should correctly set pendingDeposits and depositConfirmed mappings after a deposit", async function () {
-      const { user1, token, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);
+      const { user2, user1, token, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);
       // User1 approves tokenVault to spend their tokens and makes a pre-deposit
       const depositAmount = AMOUNT;
       await token.connect(user1).approve(tokenVault.target, depositAmount);
       await tokenVault.connect(user1).preDeposit(depositAmount);
-      // Verify that pendingDeposits for user1 is correctly set
-      expect(await tokenVault.pendingDeposits(user1.address)).to.equal(depositAmount);
-      expect(await tokenVault.depositConfirmed(user1.address)).to.be.false;
-      // Admin confirms the deposit
-      await tokenVault.connect(admin).adminConfirmDeposit([user1.address]);
-      // Verify that depositConfirmed for user1 is correctly set
-      expect(await tokenVault.depositConfirmed(user1.address)).to.be.true;
-      // Reset check for pendingDeposits to ensure it's set back to 0
-      expect(await tokenVault.pendingDeposits(user1.address)).to.equal(0);
-    });
-  });
-
-  describe("adminConfirmDeposit", function () {
-    it("should allow admin to confirm deposits and distribute shares", async function () {
-      const { admin, user1, token, tokenVault } = await loadFixture(deployTokenVaultFixture);
-      // Pre-deposit setup
-      const depositAmount = AMOUNT;
+      await token.connect(user2).approve(tokenVault.target, depositAmount);
+      await tokenVault.connect(user2).preDeposit(depositAmount);
+      //preDeposit
+      expect(await tokenVault.depositAmount(user1.address)).equal(depositAmount);
+      expect(await tokenVault.status(user1.address)).equal("DepositPending");
+      expect(await tokenVault.depositAmount(user1.address)).equal(AMOUNT);
+      expect(await tokenVault.pendingDepositAddresses(0)).equal(user1.address);
+      expect(await tokenVault.depositAmount(user2.address)).equal(depositAmount);
+      expect(await tokenVault.status(user2.address)).equal("DepositPending");
+      expect(await tokenVault.depositAmount(user2.address)).equal(AMOUNT);
+      expect(await tokenVault.pendingDepositAddresses(1)).equal(user2.address);
+      // executeDeposit
+      await tokenVault.connect(admin).executeDeposit();
+      expect(await tokenVault.status(user1.address)).equal("DepositConfirmed");
+      expect(await tokenVault.depositAmount(user1.address)).equal(0);
+      expect(await tokenVault.balanceOf(user1.address)).equal(AMOUNT);
+      expect(await tokenVault.depositAmount(user2.address)).equal(0);
+      expect(await tokenVault.status(user2.address)).equal("DepositConfirmed");
+      expect(await tokenVault.balanceOf(user2.address)).equal(AMOUNT);
+      // preWithdraw
+      await tokenVault.connect(user1).preWithdraw(AMOUNT);
+      expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(AMOUNT);
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      expect(await tokenVault.pendingWithdrawAddresses(0)).equal(user1.address);
+      await tokenVault.connect(user2).preWithdraw(5);
+      expect(await tokenVault.shareAmountToRedeem(user2.address)).equal(5);
+      expect(await tokenVault.balanceOf(user2.address)).equal("149999999999999999995");
+      expect(await tokenVault.pendingWithdrawAddresses(0)).equal(user1.address);
+      await tokenVault.connect(user2).preWithdraw(100000);
+      expect(await tokenVault.shareAmountToRedeem(user2.address)).equal(100005);
+      expect(await tokenVault.balanceOf(user2.address)).equal("149999999999999899995");
+      expect(await tokenVault.pendingWithdrawAddresses(1)).equal(user2.address);
+      // executeWithdraw
+      expect(await token.balanceOf(user1)).to.equal(0);
+      await tokenVault.connect(admin).executeWithdraw();
+      expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(0);
+      expect(await tokenVault.status(user1.address)).equal("WithdrawConfirmed");
+      expect(await token.balanceOf(user1)).to.equal(AMOUNT);
+      let shareAmountToRedeem = await tokenVault.shareAmountToRedeem(user1.address);
+      let status = await tokenVault.status(user1.address);
+      let paymentToken = await token.balanceOf(user1.address);
+      let shares = await tokenVault.balanceOf(user1.address);
+      console.log({ shareAmountToRedeem, status, paymentToken, shares });
+      // whole flow
       await token.connect(user1).approve(tokenVault.target, depositAmount);
-      await tokenVault.connect(user1).preDeposit(depositAmount);
-
-      // Confirm deposit
-      await tokenVault.connect(admin).adminConfirmDeposit([user1.address]);
-
-      // Verify shares distribution
-      const shares = await tokenVault.balanceOf(user1.address);
-      expect(shares).to.be.gt(0); // Assumes _convertToShares logic issues shares > 0 for the deposit
-      expect(await tokenVault.pendingDeposits(user1.address)).to.equal(0);
-      expect(await tokenVault.depositConfirmed(user1.address)).to.equal(true);
+      await tokenVault.connect(user1).preDeposit(5);
+      expect(await tokenVault.depositAmount(user1.address)).equal(5);
+      await tokenVault.connect(admin).executeDeposit();
+      await tokenVault.connect(user1).preWithdraw(3);
+      expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(3);
+      await tokenVault.connect(user1).preWithdraw(2);
+      expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(5);
+      await tokenVault.connect(admin).executeWithdraw();
+      shareAmountToRedeem = await tokenVault.shareAmountToRedeem(user1.address);
+      status = await tokenVault.status(user1.address);
+      paymentToken = await token.balanceOf(user1.address);
+      shares = await tokenVault.balanceOf(user1.address);
+      console.log({ shareAmountToRedeem, status, paymentToken, shares });
     });
-
-    //   it("should not allow non-admin to confirm deposits", async function () {
-    //     const { user1, user2, token, tokenVault } = await loadFixture(deployTokenVaultFixture);
-
-    //     // Attempt by non-admin to confirm deposit
-    //     await expect(tokenVault.connect(user2).adminConfirmDeposit([user1.address])).to.be.revertedWith("Not admin"); // Assumes your contract uses this revert message for non-admin actions
-    //   });
-  });
-
-  it("should emit a DepositsConfirmed event upon confirming deposits for multiple users", async function () {
-    const { admin, user1, user2, token, tokenVault } = await loadFixture(deployTokenVaultFixture);
-    // User1 and User2 approve tokenVault for an amount and make a preDeposit
-    await token.connect(user1).approve(tokenVault.target, AMOUNT);
-    await tokenVault.connect(user1).preDeposit(AMOUNT);
-    await token.connect(user2).approve(tokenVault.target, AMOUNT);
-    await tokenVault.connect(user2).preDeposit(AMOUNT);
-    // Expect the transaction to emit a DepositsConfirmed event with specific parameters for both users
-    await expect(tokenVault.connect(admin).adminConfirmDeposit([user1.address]))
-      .to.emit(tokenVault, "DepositsConfirmed")
-      .withArgs(user1.address, AMOUNT, AMOUNT);
   });
 
   // Additional tests can include various scenarios, such as attempting to deposit more than the allowance,

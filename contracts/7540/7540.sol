@@ -5,10 +5,14 @@ import "./4626.sol";
 import "../interface/IERC7540.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 contract AsynchronousVault is IERC7540, SimpleVault, Ownable {
-    constructor(IERC20 _asset, IERC20 _paymentToken) SimpleVault(_asset) {
+    constructor(
+        IERC20 _asset,
+        IERC20 _paymentToken,
+        address owner
+    ) SimpleVault(_asset) Ownable(owner) {
         paymentToken = _paymentToken;
     }
-    IERC20 paymentToken;
+    IERC20 public paymentToken;
     struct RedeemRecord {
         address depositor;
         address receiver;
@@ -65,14 +69,24 @@ contract AsynchronousVault is IERC7540, SimpleVault, Ownable {
         return requestId;
     }
 
-    function deposit(uint256 requestId, address reciever) external onlyOwner {
+    function deposit(
+        uint256 requestId,
+        address receiver
+    ) external onlyOwner returns (uint256 shares) {
         DepositRecord storage record = depositRecords[requestId];
-        require(reciever == record.receiver);
+        require(receiver == record.receiver);
         require(!record.completed, "Deposit already processed");
-        uint256 shares = convertToShares(record.assets);
+        shares = convertToShares(record.assets);
         _mint(record.receiver, shares);
         record.completed = true;
         // emit SharesIssued(requestId, record.receiver, shares);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    ) external onlyOwner returns (uint256 assets) {
+        _mint(receiver, shares);
     }
 
     function requestRedeem(
@@ -119,29 +133,37 @@ contract AsynchronousVault is IERC7540, SimpleVault, Ownable {
         );
     }
     function pendingDepositRequest(
-        uint256 requestId
-    ) external view returns (bool isPending) {
+        uint256 requestId,
+        address owner
+    ) external view returns (uint256 pendingAssets) {
         DepositRecord memory record = depositRecords[requestId];
-        return !record.completed;
+        return record.assets;
     }
 
     function pendingRedeemRequest(
-        uint256 requestId
-    ) external view returns (bool isPending) {
+        uint256 requestId,
+        address owner
+    ) external view returns (uint256 pendingShares) {
         RedeemRecord memory record = redeemRecords[requestId];
-        return !record.completed;
+        return record.assets;
     }
 
     function claimableDepositRequest(
-        uint256 requestId
-    ) external view returns (bool isPending) {
-        revert();
+        uint256 requestId,
+        address owner
+    ) external view returns (uint256 isPending) {
+        DepositRecord memory record = depositRecords[requestId];
+        require(record.assets > 0, "no deposit found");
+        return record.assets;
     }
 
     function claimableRedeemRequest(
-        uint256 requestId
-    ) external view returns (bool isPending) {
-        revert();
+        uint256 requestId,
+        address owner
+    ) external view returns (uint256 claimableShares) {
+        RedeemRecord memory record = redeemRecords[requestId];
+        require(record.assets > 0, "no asset to redeem");
+        return record.assets;
     }
 
     // these don't get used but are required in interface

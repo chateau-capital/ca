@@ -6,17 +6,17 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // import "@openzeppelin/contracts/token/ERC20/extensions/IERC4626.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
-contract SimpleVault is ERC20, IERC4626 {
+abstract contract SimpleVault is ERC20, IERC4626 {
     using SafeERC20 for IERC20;
 
-    IERC20 public immutable asset;
+    IERC20 private immutable _asset;
 
-    constructor(IERC20 _asset) ERC20("Simple Vault Token", "SVT") {
-        asset = _asset;
+    constructor(IERC20 asset_) ERC20("Simple Vault Token", "SVT") {
+        _asset = asset_;
     }
 
     function totalAssets() public view override returns (uint256) {
-        return asset.balanceOf(address(this));
+        return _asset.balanceOf(address(this));
     }
 
     function convertToShares(
@@ -47,6 +47,52 @@ contract SimpleVault is ERC20, IERC4626 {
 
     function maxRedeem(address owner) public view override returns (uint256) {
         return balanceOf(owner);
+    }
+
+    function previewDeposit(
+        uint256 assets
+    ) external view returns (uint256 shares) {
+        revert();
+    }
+    function previewMint(
+        uint256 shares
+    ) external view override returns (uint256 assets) {
+        revert();
+    }
+
+    // Implementing the `previewRedeem` function from the IERC4626 interface
+    function previewRedeem(
+        uint256 shares
+    ) external view override returns (uint256 assets) {
+        revert();
+    }
+
+    // Implementing the `previewWithdraw` function from the IERC4626 interface
+    function previewWithdraw(
+        uint256 assets
+    ) external view override returns (uint256 shares) {
+        revert();
+    }
+
+    // Implementing the `redeem` function from the IERC4626 interface
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) external override returns (uint256 assets) {
+        revert();
+    }
+
+    // Implementing the `withdraw` function from the IERC4626 interface
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) external override returns (uint256 shares) {
+        revert();
+    }
+    function asset() external view returns (address assetTokenAddress) {
+        assetTokenAddress = address(_asset);
     }
 
     // Implement deposit, mint, withdraw, and redeem methods...

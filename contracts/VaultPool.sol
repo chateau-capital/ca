@@ -86,15 +86,17 @@ contract VaultPool is Ownable, NotAmerica, Pausable {
     }
 
     /// FIX For redeem
-    /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
-    /// @param amount The amount of RWA tokens to redeem.
+    /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens. 
+    /// @param amount The amount of RWA tokens to redeem in 10**18
     function redeem(
         uint256 amount
     ) public whenNotPaused NOT_AMERICAN reentrancy {
         require(amount > 0, "Amount should be greater than 0");
 
-        // determines the correct amount of USDT owed to the user based on amount of RWA tokens they have
-        uint redeemAmount = (price / 1000000) * amount;
+        /// @notice determines the correct amount of USDT owed to the user based on amount of RWA tokens they have. 
+        /// @dev converts amount in 10**18 to redeemAmount in 10**6 for stablecoins
+        uint redeemAmount = (price / 1000000) * amount / (10**12);
+
         uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
 
         require(
@@ -104,6 +106,7 @@ contract VaultPool is Ownable, NotAmerica, Pausable {
                 uint256ToString(stablecoinAvailableTotal)
             )
         );
+
 
         shareToken.safeTransferFrom(msg.sender, address(this), amount);
         shareToken.burn(amount);

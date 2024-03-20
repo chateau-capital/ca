@@ -2,6 +2,7 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.5",
     "@nomiclabs/hardhat-solhint": "^3.0.1",
     "@quadrata/contracts": "^1.0.3",
     "hardhat": "^2.22.1",

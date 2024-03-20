@@ -2,7 +2,6 @@ require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 require("solidity-coverage");
 require("@nomiclabs/hardhat-solhint");
-
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -20,12 +19,12 @@ module.exports = {
   },
 
   networks: {
-    sepolia: {
-      url: process.env.SEPOLIA_URL,
-      accounts: [process.env.SEPOLIA_PRIVATE_KEY]
-    },
-    arbitrumOne:{
-      url: `https://1rpc.io/arb`,
+    // sepolia: {
+    //   url: process.env.SEPOLIA_URL,
+    //   accounts: [process.env.SEPOLIA_PRIVATE_KEY]
+    // },
+    arbitrumOne: {
+      url: `${process.env.ARB_NODE}${process.env.ARB_ALCHEMY_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
       saveDeployments: true,
       tags: ["arbitrum"],
@@ -38,7 +37,7 @@ module.exports = {
     },
   },
   sourcify: {
-    enabled: true
+    enabled: true,
   },
   etherscan: {
     apiKey: {
@@ -46,7 +45,7 @@ module.exports = {
       etherscan: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBSCAN_APIKEY || "",
       arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
-   },
+    },
     customChains: [
       {
         network: "arbitrumSepolia",

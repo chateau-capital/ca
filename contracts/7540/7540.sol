@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "./4626.sol";
 import "../interface/IERC7540.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-contract AsynchronousVault is IERC7540, SimpleVault, Ownable {
+contract Vault is IERC7540, SimpleVault, Ownable {
     constructor(
         IERC20 _asset,
         IERC20 _paymentToken,

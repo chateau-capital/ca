@@ -2,6 +2,8 @@ require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 require("solidity-coverage");
 require("@nomiclabs/hardhat-solhint");
+require("@nomicfoundation/hardhat-verify");
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -19,26 +21,22 @@ module.exports = {
   },
 
   networks: {
-    // sepolia: {
-    //   url: process.env.SEPOLIA_URL,
-    //   accounts: [process.env.SEPOLIA_PRIVATE_KEY]
-    // },
     arbitrumOne: {
       url: `${process.env.ARB_NODE}${process.env.ARB_ALCHEMY_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
       saveDeployments: true,
       tags: ["arbitrum"],
     },
-    neondevnet: {
-      url: "https://devnet.neonevm.org",
-      accounts: [process.env.PRIVATE_KEY],
-      chainId: 245022926,
-    },
-    neonmainnet: {
-      url: "https://neon-proxy-mainnet.solana.p2p.org",
-      accounts: [process.env.PRIVATE_KEY],
-      chainId: 245022934,
-    },
+    // neondevnet: {
+    //   url: "https://devnet.neonevm.org",
+    //   accounts: [process.env.PRIVATE_KEY],
+    //   chainId: 245022926,
+    // },
+    // neonmainnet: {
+    //   url: "https://neon-proxy-mainnet.solana.p2p.org",
+    //   accounts: [process.env.PRIVATE_KEY],
+    //   chainId: 245022934,
+    // },
     // arbitrumSepolia: {
     //   url: `${process.env.ARB_SEPOLIA_NODE}${process.env.ARB_SEPOLIA_ALCHEMY_KEY}`,
     //   accounts: [process.env.PRIVATE_KEY],
@@ -51,11 +49,11 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      neonevm: "test",
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
-      etherscan: process.env.ETHERSCAN_API_KEY || "",
+      // neonevm: "test",
+      // sepolia: process.env.ETHERSCAN_API_KEY || "",
+      // etherscan: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBSCAN_APIKEY || "",
-      arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
+      // arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
     },
     customChains: [
       {

@@ -29,18 +29,29 @@ module.exports = {
       saveDeployments: true,
       tags: ["arbitrum"],
     },
-    arbitrumSepolia: {
-      url: `${process.env.ARB_SEPOLIA_NODE}${process.env.ARB_SEPOLIA_ALCHEMY_KEY}`,
+    neondevnet: {
+      url: "https://devnet.neonevm.org",
       accounts: [process.env.PRIVATE_KEY],
-      saveDeployments: true,
-      tags: ["arbitrumSepolia"],
+      chainId: 245022926,
     },
+    neonmainnet: {
+      url: "https://neon-proxy-mainnet.solana.p2p.org",
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 245022934,
+    },
+    // arbitrumSepolia: {
+    //   url: `${process.env.ARB_SEPOLIA_NODE}${process.env.ARB_SEPOLIA_ALCHEMY_KEY}`,
+    //   accounts: [process.env.PRIVATE_KEY],
+    //   saveDeployments: true,
+    //   tags: ["arbitrumSepolia"],
+    // },
   },
   sourcify: {
     enabled: true,
   },
   etherscan: {
     apiKey: {
+      neonevm: "test",
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       etherscan: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBSCAN_APIKEY || "",
@@ -53,6 +64,22 @@ module.exports = {
         urls: {
           apiURL: "https://api-sepolia.arbiscan.io/api",
           browserURL: "https://sepolia.arbiscan.io/",
+        },
+      },
+      {
+        network: "neonevm",
+        chainId: 245022926,
+        urls: {
+          apiURL: "https://devnet-api.neonscan.org/hardhat/verify",
+          browserURL: "https://devnet.neonscan.org",
+        },
+      },
+      {
+        network: "neonevm",
+        chainId: 245022934,
+        urls: {
+          apiURL: "https://api.neonscan.org/hardhat/verify",
+          browserURL: "https://neonscan.org",
         },
       },
     ],

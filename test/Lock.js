@@ -114,7 +114,7 @@ describe("Lock", function () {
       getStakingInfo = await stakingPool.getStakingInfo(owner.address);
       expect(getStakingInfo.length).to.equal(1);
     });
-    it("Should be correctly redeem tether amount", async function () {
+    it("Should correctly redeem tether amount", async function () {
       const { owner, otherAccount, usdt, vaultPool, share, stakingPool } = await loadFixture(deployOneYearLockFixture);
       expect(await usdt.balanceOf(otherAccount)).to.equal("1000000000");
       await usdt.mint(vaultPool.target, TETHER_STARTING_BALANCE);

@@ -5,7 +5,6 @@ pragma solidity ^0.8.20;
 /// @author Kaso Qian & Hao Jun Tan
 /// @notice  Contract that handles centralized user redemption function for RWA tokens
 /// @dev audit pending
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -87,14 +86,16 @@ contract VaultPool is Ownable, NotAmerica, Pausable {
 
     /// FIX For redeem
     /// @notice Redeems stablecoin with RWA assets. Users get stablecoin and burn RWA tokens.
-    /// @param amount The amount of RWA tokens to redeem.
+    /// @param amount The amount of RWA tokens to redeem in 10**18
     function redeem(
         uint256 amount
     ) public whenNotPaused NOT_AMERICAN reentrancy {
         require(amount > 0, "Amount should be greater than 0");
 
-        // determines the correct amount of USDT owed to the user based on amount of RWA tokens they have
-        uint redeemAmount = (price / 1000000) * amount;
+        /// @notice determines the correct amount of USDT owed to the user based on amount of RWA tokens they have.
+        /// @dev converts amount in 10**18 to redeemAmount in 10**6 for stablecoins
+        uint redeemAmount = (price * amount) / 1e18;
+
         uint stablecoinAvailableTotal = issueToken.balanceOf(address(this));
 
         require(

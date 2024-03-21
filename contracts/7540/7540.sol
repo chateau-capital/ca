@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "./4626.sol";
 import "../interface/IERC7540.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interface/IERC20Burnable.sol";
 contract Vault is IERC7540, SimpleVault, Ownable {
     constructor(
         IERC20 _asset,
@@ -91,7 +92,14 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         require(shares > 0, "Shares must be greater than 0");
         require(_asset.balanceOf(msg.sender) >= shares, "Insufficient shares");
         // Logic to reduce shares from the sender
-        _burn(msg.sender, shares); // Adjust based on your shares handling logic
+
+        SafeERC20.safeTransferFrom(
+            IERC20(_asset),
+            msg.sender,
+            address(this),
+            shares
+        );
+        IERC20Burnable(address(_asset)).burn(shares);
         requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
         redeemRecords[requestId] = RedeemRecord({
             depositor: msg.sender,
@@ -102,7 +110,6 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         userRedeemRecord[msg.sender] = requestId;
         // Record the redeem request, similar to deposit handling
         emit RedeemRequest(receiver, owner, requestId, owner, shares);
-
         return requestId;
     }
 
@@ -110,7 +117,6 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         RedeemRecord storage record = redeemRecords[requestId];
         require(record.status == 1, "No pending redeem");
         uint256 assets = convertToAssets(record.assets); // Implement this conversion
-
         SafeERC20.safeTransferFrom(
             IERC20(paymentToken),
             record.receiver,

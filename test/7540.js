@@ -90,63 +90,71 @@ describe("TokenVault", function () {
   });
   describe("requestRedeem", function () {
     it("should burn the correct amount of shares, add a redeem record, and emit an event", async function () {
-      const { user1, paymentToken, tokenVault, share } = await loadFixture(deployTokenVaultFixture);
-
+      const { user1, tokenVault, share } = await loadFixture(deployTokenVaultFixture);
       // Setup: Assume user1 has shares to redeem.
       // This requires user1 to have a balance of the share token.
       // For simplicity, let's assume shares are minted directly for the purpose of this test.
       const SHARES_TO_REDEEM = AMOUNT; // Example amount of shares
       await share.mint([user1.address], [SHARES_TO_REDEEM]);
-      await share.connect(user1).approve(tokenVault.target, SHARES_TO_REDEEM);
 
       // Pre-checks
-
       const initialSharesBalance = await share.balanceOf(user1.address);
       expect(initialSharesBalance).to.equal(SHARES_TO_REDEEM);
 
+      await share.connect(user1).approve(tokenVault.target, SHARES_TO_REDEEM);
+
       // Execute requestRedeem
-      await expect(tokenVault.connect(user1).requestRedeem(SHARES_TO_REDEEM, user1.address, user1.address, "0x"))
+      expect(await tokenVault.connect(user1).requestRedeem(SHARES_TO_REDEEM, user1.address, user1.address, "0x"))
         .to.emit(tokenVault, "RedeemRequest")
         .withArgs(user1.address, user1.address, 1, user1.address, SHARES_TO_REDEEM); // Adjust args as necessary
 
       // // Post-checks: Verify the shares balance of user1 has decreased by SHARES_TO_REDEEM
-      // const expectedBalanceAfterRedeem = initialSharesBalance.sub(SHARES_TO_REDEEM);
-      // expect(await share.balanceOf(user1.address)).to.equal(expectedBalanceAfterRedeem);
+      expect(await share.balanceOf(user1.address)).equal(0);
 
       // // Verify a redeem record was added
-      // const userRedeemId = await tokenVault.userRedeemRecord(user1.address);
-      // expect(userRedeemId).to.equal(1); // Assuming this is the first redeem request
+      const userRedeemId = await tokenVault.userRedeemRecord(user1.address);
+      expect(userRedeemId).to.equal(1); // Assuming this is the first redeem request
 
-      // const redeemRecord = await tokenVault.redeemRecords(userRedeemId);
+      const redeemRecord = await tokenVault.redeemRecords(userRedeemId);
       // // Verify details of the redeem record
-      // expect(redeemRecord.depositor).to.equal(user1.address);
-      // expect(redeemRecord.receiver).to.equal(user1.address);
-      // expect(redeemRecord.assets).to.equal(SHARES_TO_REDEEM);
-      // expect(redeemRecord.status).to.equal(1); // Assuming 1 indicates pending
+      expect(redeemRecord.depositor).to.equal(user1.address);
+      expect(redeemRecord.receiver).to.equal(user1.address);
+      expect(redeemRecord.assets).to.equal(SHARES_TO_REDEEM);
+      expect(redeemRecord.status).to.equal(1); // Assuming 1 indicates pending
     });
   });
 
-  //   describe("preDeposit", function () {
-  //     it("should allow users to pre-deposit tokens", async function () {
-  //       const { user1, user2, token, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);
-  //       console.log(await tokenVault.paymentToken());
-  //       console.log(token.target);
-  //       // await token.connect(user1).approve(tokenVault.target, AMOUNT);
-  //       await token.connect(user1).approve(tokenVault.target, AMOUNT);
-  //       expect(await token.balanceOf(user1)).to.equal(AMOUNT);
-  //       await tokenVault.connect(user1).preDeposit(AMOUNT);
-  //       expect(await tokenVault.depositAmount(user1.address)).to.equal(AMOUNT);
-  //       expect(await token.balanceOf(user1)).to.equal("0");
-  //       expect(await token.balanceOf(tokenVault.target)).to.equal(AMOUNT);
-  //       // user 2 flow
-  //       await token.connect(user2).approve(tokenVault.target, AMOUNT);
-  //       expect(await token.balanceOf(user2)).to.equal(AMOUNT);
-  //       await tokenVault.connect(user2).preDeposit(AMOUNT);
-  //       expect(await tokenVault.depositAmount(user2.address)).to.equal(AMOUNT);
-  //       expect(await token.balanceOf(user2)).to.equal("0");
-  //       expect(await token.balanceOf(tokenVault.target)).to.equal(DOUBLE_AMOUNT);
-  //     });
-  //   });
+  describe("deposit process", function () {
+    it("should update the deposit record and mint shares correctly", async function () {
+      const { admin, user1, paymentToken, tokenVault, share } = await loadFixture(deployTokenVaultFixture);
+
+      // Setup: User1 requests a deposit
+      const depositAmount = AMOUNT; // 10 tokens for deposit
+      await paymentToken.mint(user1.address, depositAmount);
+      await paymentToken.connect(user1).approve(tokenVault.target, depositAmount);
+
+      await tokenVault.connect(user1).requestDeposit(depositAmount, user1.address, user1.address, "0x");
+
+      // // Pre-checks for deposit request record
+      let depositRecord = await tokenVault.depositRecords(1n);
+      expect(depositRecord.assets).to.equal(depositAmount);
+      expect(depositRecord.status).to.equal(1); // Status is pending
+
+      // // Admin processes the deposit, converting assets to shares and updating the deposit record
+      await tokenVault.connect(admin).deposit(1n, user1.address);
+
+      // // Post-checks for deposit record update
+      depositRecord = await tokenVault.depositRecords(1);
+      expect(depositRecord.status).to.equal(2); // Verify status is updated to complete
+
+      // // Verify shares were minted and sent correctly
+      expect(await share.balanceOf(user1.address)).to.equal(1);
+
+      // Verify the deposit event emission - this step is optional and depends on whether you have an event for a successful deposit
+      // await expect(...) // Add your event expectation here, similar to how you did for requestDeposit
+    });
+  });
+
   //   describe("USYCTokenVault deposit process", function () {
   //     it("should correctly set pendingDeposits and depositConfirmed mappings after a deposit", async function () {
   //       const { user2, user1, token, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);

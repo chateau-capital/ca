@@ -17,13 +17,13 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         address depositor;
         address receiver;
         uint256 assets;
-        bool completed;
+        uint256 status; // 1 pending 2 complete 3 canceled
     }
     struct DepositRecord {
         address depositor;
         address receiver;
         uint256 assets;
-        bool completed;
+        uint256 status; // 1 pending 2 complete 3 canceled
     }
     mapping(uint256 => DepositRecord) public depositRecords;
     mapping(uint256 => RedeemRecord) public redeemRecords;
@@ -53,18 +53,18 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         SafeERC20.safeTransferFrom(
             IERC20(paymentToken),
             msg.sender,
-            receiver,
+            address(this),
             assets
         );
         requestId = _generateRequestDepositId(); // Implement this method based on your ID strategy
         depositRecords[requestId] = DepositRecord({
-            depositor: owner,
+            depositor: msg.sender,
             receiver: receiver,
             assets: assets,
-            completed: false
+            status: 1
         });
         userDepositRecord[owner] = requestId;
-        emit DepositRequest(receiver, owner, requestId, owner, assets);
+        emit DepositRequest(receiver, owner, requestId, msg.sender, assets);
 
         return requestId;
     }
@@ -75,18 +75,11 @@ contract Vault is IERC7540, SimpleVault, Ownable {
     ) external onlyOwner returns (uint256 shares) {
         DepositRecord storage record = depositRecords[requestId];
         require(receiver == record.receiver);
-        require(!record.completed, "Deposit already processed");
+        require(record.status == 1, "No pending deposit");
         shares = convertToShares(record.assets);
         _mint(record.receiver, shares);
-        record.completed = true;
+        record.status = 2;
         // emit SharesIssued(requestId, record.receiver, shares);
-    }
-
-    function mint(
-        uint256 shares,
-        address receiver
-    ) external onlyOwner returns (uint256 assets) {
-        _mint(receiver, shares);
     }
 
     function requestRedeem(
@@ -96,7 +89,7 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         bytes calldata data
     ) external returns (uint256 requestId) {
         require(shares > 0, "Shares must be greater than 0");
-        require(balanceOf(msg.sender) >= shares, "Insufficient shares");
+        require(_asset.balanceOf(msg.sender) >= shares, "Insufficient shares");
         // Logic to reduce shares from the sender
         _burn(msg.sender, shares); // Adjust based on your shares handling logic
         requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
@@ -104,7 +97,7 @@ contract Vault is IERC7540, SimpleVault, Ownable {
             depositor: msg.sender,
             receiver: receiver,
             assets: shares,
-            completed: false
+            status: 1
         });
         userRedeemRecord[msg.sender] = requestId;
         // Record the redeem request, similar to deposit handling
@@ -115,7 +108,7 @@ contract Vault is IERC7540, SimpleVault, Ownable {
 
     function redeem(uint256 requestId) external onlyOwner {
         RedeemRecord storage record = redeemRecords[requestId];
-        require(!record.completed, "Redeem already processed");
+        require(record.status == 1, "No pending redeem");
         uint256 assets = convertToAssets(record.assets); // Implement this conversion
 
         SafeERC20.safeTransferFrom(
@@ -124,7 +117,7 @@ contract Vault is IERC7540, SimpleVault, Ownable {
             address(this),
             assets
         );
-        record.completed = true;
+        record.status = 2;
         emit RedeemClaimable(
             record.depositor,
             requestId,
@@ -181,6 +174,13 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         uint256 shares
     ) public {
         emit RedeemClaimable(owner, 0, assets, shares);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    ) external onlyOwner returns (uint256 assets) {
+        _mint(receiver, shares);
     }
     // Add methods to manage request states (pending, claimable)...
 }

@@ -3,13 +3,12 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-// import "@openzeppelin/contracts/token/ERC20/extensions/IERC4626.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 abstract contract SimpleVault is ERC20, IERC4626 {
     using SafeERC20 for IERC20;
 
-    IERC20 private immutable _asset;
+    IERC20 internal immutable _asset;
 
     constructor(IERC20 asset_) ERC20("Simple Vault Token", "SVT") {
         _asset = asset_;

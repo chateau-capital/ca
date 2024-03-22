@@ -1,5 +1,5 @@
 {
-  "name": "hardhat-project",
+  "name": "chateau-erc20",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.5",

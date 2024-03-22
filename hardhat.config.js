@@ -53,7 +53,7 @@ module.exports = {
       // sepolia: process.env.ETHERSCAN_API_KEY || "",
       // etherscan: process.env.ETHERSCAN_API_KEY || "",
       arbitrumOne: process.env.ARBSCAN_APIKEY || "",
-      // arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
+      arbitrumSepolia: process.env.ARBSCAN_APIKEY || "",
     },
     customChains: [
       {

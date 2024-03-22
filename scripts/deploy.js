@@ -23,7 +23,10 @@ async function main() {
   const factory = await Factory.waitForDeployment();
 
   const Fund = await factory.newFund.staticCall("RWA","RWA",usdtCoin.target);
-  await factory.newFund("CHAD.D","Chateau Alternative Debt ",usdtCoin.target);
+
+  //error: name and symbol reversed...
+
+  await factory.newFund("CHAD.D","Chateau Alternative Debt",usdtCoin.target);
 
   console.table({
     shareCoin: Fund[0],

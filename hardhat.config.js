@@ -37,12 +37,12 @@ module.exports = {
     //   accounts: [process.env.PRIVATE_KEY],
     //   chainId: 245022934,
     // },
-    // arbitrumSepolia: {
-    //   url: `${process.env.ARB_SEPOLIA_NODE}${process.env.ARB_SEPOLIA_ALCHEMY_KEY}`,
-    //   accounts: [process.env.PRIVATE_KEY],
-    //   saveDeployments: true,
-    //   tags: ["arbitrumSepolia"],
-    // },
+    arbitrumSepolia: {
+      url: `https://arb-sepolia.g.alchemy.com/v2/-AKheJHZZjH2_It7SJq3oup_l9c8SsjT`,
+      accounts: [process.env.PRIVATE_KEY],
+      saveDeployments: true,
+      tags: ["arbitrumSepolia"],
+    },
   },
   sourcify: {
     enabled: true,

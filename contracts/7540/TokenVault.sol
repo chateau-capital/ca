@@ -40,7 +40,6 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
     function _generateRequestRedeemId() private returns (uint256) {
         return ++requestRedeemIdCounter; // Increment and return the new value
     }
-    // Define mappings to track deposit and redeem requests...
     function requestDeposit(
         uint256 assets,
         address receiver,
@@ -224,13 +223,13 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
 
     function previewRedeem(
         uint256 shares
-    ) public view virtual returns (uint256) {
+    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
         revert();
     }
 
     function previewWithdraw(
         uint256 assets
-    ) public view virtual returns (uint256) {
+    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
         revert();
     }
 }

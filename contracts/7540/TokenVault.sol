@@ -5,12 +5,12 @@ import "./4626.sol";
 import "../interface/IERC7540.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interface/IERC20Burnable.sol";
-contract Vault is IERC7540, SimpleVault, Ownable {
+contract TokenVault is IERC7540, SimpleVault, Ownable {
     constructor(
-        IERC20 _asset,
+        IERC20 asset_,
         IERC20 _paymentToken,
         address owner
-    ) SimpleVault(_asset) Ownable(owner) {
+    ) SimpleVault(asset_) Ownable(owner) {
         paymentToken = _paymentToken;
     }
     IERC20 public paymentToken;
@@ -32,6 +32,8 @@ contract Vault is IERC7540, SimpleVault, Ownable {
     mapping(address => uint256) public userRedeemRecord;
     uint256 private requestDepositIdCounter;
     uint256 private requestRedeemIdCounter;
+    event DepositCancelled(uint256 requestId, address depositor);
+    event RedeemCancelled(uint256 requestId, address depositor);
     function _generateRequestDepositId() private returns (uint256) {
         return ++requestDepositIdCounter; // Increment and return the new value
     }
@@ -73,14 +75,14 @@ contract Vault is IERC7540, SimpleVault, Ownable {
     function deposit(
         uint256 requestId,
         address receiver
-    ) external onlyOwner returns (uint256 shares) {
+    ) external override onlyOwner returns (uint256 shares) {
         DepositRecord storage record = depositRecords[requestId];
-        require(receiver == record.receiver);
+        require(receiver == record.receiver, "Receiver mismatch");
         require(record.status == 1, "No pending deposit");
         shares = convertToShares(record.assets);
-        _mint(record.receiver, shares);
+        _mint(receiver, shares);
         record.status = 2;
-        // emit SharesIssued(requestId, record.receiver, shares);
+        emit DepositClaimable(receiver, requestId, record.assets, shares);
     }
 
     function requestRedeem(
@@ -90,16 +92,9 @@ contract Vault is IERC7540, SimpleVault, Ownable {
         bytes calldata data
     ) external returns (uint256 requestId) {
         require(shares > 0, "Shares must be greater than 0");
-        require(_asset.balanceOf(msg.sender) >= shares, "Insufficient shares");
+        require(this.balanceOf(msg.sender) >= shares, "Insufficient shares");
         // Logic to reduce shares from the sender
-
-        SafeERC20.safeTransferFrom(
-            IERC20(_asset),
-            msg.sender,
-            address(this),
-            shares
-        );
-        IERC20Burnable(address(_asset)).burn(shares);
+        _burn(receiver, shares);
         requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
         redeemRecords[requestId] = RedeemRecord({
             depositor: msg.sender,
@@ -116,13 +111,12 @@ contract Vault is IERC7540, SimpleVault, Ownable {
     function redeem(uint256 requestId) external onlyOwner {
         RedeemRecord storage record = redeemRecords[requestId];
         require(record.status == 1, "No pending redeem");
-        uint256 assets = convertToAssets(record.assets); // Implement this conversion
-        SafeERC20.safeTransferFrom(
-            IERC20(paymentToken),
-            record.receiver,
-            address(this),
-            assets
+        require(
+            paymentToken.balanceOf(address(this)) >= record.assets,
+            "not enough stables in account"
         );
+        uint256 assets = convertToAssets(record.assets); // Implement this conversion
+        SafeERC20.safeTransfer(IERC20(paymentToken), record.receiver, assets);
         record.status = 2;
         emit RedeemClaimable(
             record.depositor,
@@ -131,6 +125,30 @@ contract Vault is IERC7540, SimpleVault, Ownable {
             assets
         );
     }
+
+    function cancelDeposit(uint256 requestId) external {
+        DepositRecord storage record = depositRecords[requestId];
+        require(msg.sender == record.depositor, "Only depositor can cancel");
+        require(record.status == 1, "Deposit not pending");
+        // Refund the deposited tokens back to the depositor
+        SafeERC20.safeTransfer(
+            IERC20(paymentToken),
+            record.depositor,
+            record.assets
+        );
+        // Update the deposit record status to indicate cancellation (assuming '3' is for canceled)
+        record.status = 3;
+        emit DepositCancelled(requestId, record.depositor);
+    }
+    function cancelRedeem(uint256 requestId) external {
+        RedeemRecord storage record = redeemRecords[requestId];
+        require(msg.sender == record.depositor, "Only depositor can cancel");
+        require(record.status == 1, "Redeem not pending");
+        _mint(record.depositor, record.assets);
+        record.status = 3;
+        emit RedeemCancelled(requestId, record.depositor);
+    }
+
     function pendingDepositRequest(
         uint256 requestId,
         address owner
@@ -181,12 +199,4 @@ contract Vault is IERC7540, SimpleVault, Ownable {
     ) public {
         emit RedeemClaimable(owner, 0, assets, shares);
     }
-
-    function mint(
-        uint256 shares,
-        address receiver
-    ) external onlyOwner returns (uint256 assets) {
-        _mint(receiver, shares);
-    }
-    // Add methods to manage request states (pending, claimable)...
 }

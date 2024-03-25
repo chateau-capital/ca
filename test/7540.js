@@ -10,29 +10,18 @@ describe("TokenVault", function () {
     const [admin, user1, user2] = await ethers.getSigners();
     const Token = await hre.ethers.deployContract("USDT");
     const paymentToken = await Token.waitForDeployment();
-    console.log(paymentToken.target);
-
-    console.log("here");
     const Share = await ethers.getContractFactory("Share");
     const share = await Share.deploy("Share", "SHARE");
-    const d7540 = await ethers.getContractFactory("Vault");
-    const Usyc = await hre.ethers.deployContract("USYC");
-    const usyc = await Usyc.waitForDeployment();
-    console.log("here");
-    console.log(share.target, paymentToken.target, admin.address);
+    const d7540 = await ethers.getContractFactory("TokenVault");
     const tokenVault = await d7540.deploy(share.target, paymentToken.target, admin.address);
 
-    // Deploy your TokenVault here, passing the token address
-    // const TokenVault = await ethers.getContractFactory("USYCTokenVault");
-    // const tokenVault = await TokenVault.deploy(i7540.target, token.target, admin, "Share", "777");
-    // await tokenVault.waitForDeployment();
-
-    // Initial token distribution
-    // await token.mint(user1.address, AMOUNT);
-    // await token.mint(user2.address, AMOUNT);
-    console.log(admin.address, user1.address);
-
-    return { admin, user1, user2, paymentToken, tokenVault, usyc, share };
+    await paymentToken.mint(user1.address, TETHER_STARTING_BALANCE);
+    await paymentToken.connect(user1).approve(tokenVault.target, TETHER_STARTING_BALANCE);
+    await paymentToken.mint(user2.address, TETHER_STARTING_BALANCE);
+    await paymentToken.connect(user2).approve(tokenVault.target, TETHER_STARTING_BALANCE);
+    await paymentToken.mint(admin.address, TETHER_STARTING_BALANCE);
+    await paymentToken.connect(admin).approve(tokenVault.target, TETHER_STARTING_BALANCE);
+    return { admin, user1, user2, paymentToken, tokenVault, share };
   }
   describe("deployment", function () {
     it("USDC should be the payment token, Share should be the share token", async function () {
@@ -45,10 +34,6 @@ describe("TokenVault", function () {
   describe("requestDeposit", function () {
     it("should transfer the correct amount, add a deposit record, and emit an event", async function () {
       const { user1, user2, paymentToken, tokenVault } = await loadFixture(deployTokenVaultFixture);
-
-      // Setup: Mint and approve tokens for user1
-      await paymentToken.mint(user1.address, TETHER_STARTING_BALANCE);
-      await paymentToken.connect(user1).approve(tokenVault.target, AMOUNT_TO_STAKE);
 
       // Pre-checks
       // const initialBalanceReceiver = await paymentToken.balanceOf(user2.address);
@@ -90,36 +75,42 @@ describe("TokenVault", function () {
   });
   describe("requestRedeem", function () {
     it("should burn the correct amount of shares, add a redeem record, and emit an event", async function () {
-      const { user1, tokenVault, share } = await loadFixture(deployTokenVaultFixture);
+      const { user1, tokenVault, share, admin } = await loadFixture(deployTokenVaultFixture);
+
+      // Pre-checks
+      // const initialBalanceReceiver = await paymentToken.balanceOf(user2.address);
+      const initialDepositRecord = await tokenVault.depositRecords(user1.address); // Adjust according to how you access deposit records
       // Setup: Assume user1 has shares to redeem.
       // This requires user1 to have a balance of the share token.
       // For simplicity, let's assume shares are minted directly for the purpose of this test.
       const SHARES_TO_REDEEM = AMOUNT; // Example amount of shares
-      await share.mint([user1.address], [SHARES_TO_REDEEM]);
 
       // Pre-checks
-      const initialSharesBalance = await share.balanceOf(user1.address);
-      expect(initialSharesBalance).to.equal(SHARES_TO_REDEEM);
+      // const initialSharesBalance = await tokenVault.balanceOf(user1.address);
+      // expect(initialSharesBalance).to.equal(SHARES_TO_REDEEM);
 
-      await share.connect(user1).approve(tokenVault.target, SHARES_TO_REDEEM);
-
-      // Execute requestRedeem
-      expect(await tokenVault.connect(user1).requestRedeem(SHARES_TO_REDEEM, user1.address, user1.address, "0x"))
+      // await tokenVault.deposit();
+      // // Execute requestRedeem
+      await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      await tokenVault.connect(admin).deposit(1n, user1.address);
+      expect(await tokenVault.balanceOf(user1.address)).equal(AMOUNT_TO_STAKE);
+      await tokenVault.connect(user1).approve(tokenVault.target, AMOUNT_TO_STAKE);
+      expect(await tokenVault.connect(user1).requestRedeem(AMOUNT_TO_STAKE, user1.address, user1.address, "0x"))
         .to.emit(tokenVault, "RedeemRequest")
         .withArgs(user1.address, user1.address, 1, user1.address, SHARES_TO_REDEEM); // Adjust args as necessary
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      // // // Post-checks: Verify the shares balance of user1 has decreased by SHARES_TO_REDEEM
 
-      // // Post-checks: Verify the shares balance of user1 has decreased by SHARES_TO_REDEEM
-      expect(await share.balanceOf(user1.address)).equal(0);
-
-      // // Verify a redeem record was added
+      // // // Verify a redeem record was added
       const userRedeemId = await tokenVault.userRedeemRecord(user1.address);
       expect(userRedeemId).to.equal(1); // Assuming this is the first redeem request
 
       const redeemRecord = await tokenVault.redeemRecords(userRedeemId);
-      // // Verify details of the redeem record
+      // // // Verify details of the redeem record
       expect(redeemRecord.depositor).to.equal(user1.address);
       expect(redeemRecord.receiver).to.equal(user1.address);
-      expect(redeemRecord.assets).to.equal(SHARES_TO_REDEEM);
+      expect(redeemRecord.assets).to.equal(AMOUNT_TO_STAKE);
       expect(redeemRecord.status).to.equal(1); // Assuming 1 indicates pending
     });
   });
@@ -134,95 +125,96 @@ describe("TokenVault", function () {
       await paymentToken.connect(user1).approve(tokenVault.target, depositAmount);
 
       await tokenVault.connect(user1).requestDeposit(depositAmount, user1.address, user1.address, "0x");
-
       // // Pre-checks for deposit request record
       let depositRecord = await tokenVault.depositRecords(1n);
       expect(depositRecord.assets).to.equal(depositAmount);
-      expect(depositRecord.status).to.equal(1); // Status is pending
+      expect(depositRecord.status).to.equal(1n); // Status is pending
 
       // // Admin processes the deposit, converting assets to shares and updating the deposit record
-      await tokenVault.connect(admin).deposit(1n, user1.address);
-
+      await paymentToken.connect(user1).approve(tokenVault.target, depositAmount);
+      await expect(await tokenVault.connect(admin).deposit(1n, user1.address));
       // // Post-checks for deposit record update
-      depositRecord = await tokenVault.depositRecords(1);
+      depositRecord = await tokenVault.depositRecords(1n);
       expect(depositRecord.status).to.equal(2); // Verify status is updated to complete
-
-      // // Verify shares were minted and sent correctly
-      expect(await share.balanceOf(user1.address)).to.equal(1);
+      // // // Verify shares were minted and sent correctly
+      expect(await tokenVault.balanceOf(user1.address)).to.equal(AMOUNT);
 
       // Verify the deposit event emission - this step is optional and depends on whether you have an event for a successful deposit
       // await expect(...) // Add your event expectation here, similar to how you did for requestDeposit
     });
   });
+  describe("redeem process", function () {
+    it("should update the deposit record and mint shares correctly", async function () {
+      const { user1, tokenVault, share, admin, paymentToken } = await loadFixture(deployTokenVaultFixture);
+      const SHARES_TO_REDEEM = AMOUNT; // Example amount of shares
+      await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      await tokenVault.connect(admin).deposit(1n, user1.address);
+      expect(await tokenVault.balanceOf(user1.address)).equal(AMOUNT_TO_STAKE);
+      await tokenVault.connect(user1).approve(tokenVault.target, AMOUNT_TO_STAKE);
+      expect(await tokenVault.connect(user1).requestRedeem(AMOUNT_TO_STAKE, user1.address, user1.address, "0x"))
+        .to.emit(tokenVault, "RedeemRequest")
+        .withArgs(user1.address, user1.address, 1, user1.address, SHARES_TO_REDEEM); // Adjust args as necessary
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      const userRedeemId = await tokenVault.userRedeemRecord(user1.address);
 
-  //   describe("USYCTokenVault deposit process", function () {
-  //     it("should correctly set pendingDeposits and depositConfirmed mappings after a deposit", async function () {
-  //       const { user2, user1, token, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);
-  //       // User1 approves tokenVault to spend their tokens and makes a pre-deposit
-  //       const depositAmount = AMOUNT;
-  //       await token.connect(user1).approve(tokenVault.target, depositAmount);
-  //       await tokenVault.connect(user1).preDeposit(depositAmount);
-  //       await token.connect(user2).approve(tokenVault.target, depositAmount);
-  //       await tokenVault.connect(user2).preDeposit(depositAmount);
-  //       //preDeposit
-  //       expect(await tokenVault.depositAmount(user1.address)).equal(depositAmount);
-  //       expect(await tokenVault.status(user1.address)).equal("DepositPending");
-  //       expect(await tokenVault.depositAmount(user1.address)).equal(AMOUNT);
-  //       expect(await tokenVault.pendingDepositAddresses(0)).equal(user1.address);
-  //       expect(await tokenVault.depositAmount(user2.address)).equal(depositAmount);
-  //       expect(await tokenVault.status(user2.address)).equal("DepositPending");
-  //       expect(await tokenVault.depositAmount(user2.address)).equal(AMOUNT);
-  //       expect(await tokenVault.pendingDepositAddresses(1)).equal(user2.address);
-  //       // executeDeposit
-  //       await tokenVault.connect(admin).executeDeposit();
-  //       expect(await tokenVault.status(user1.address)).equal("DepositConfirmed");
-  //       expect(await tokenVault.depositAmount(user1.address)).equal(0);
-  //       expect(await tokenVault.balanceOf(user1.address)).equal(AMOUNT);
-  //       expect(await tokenVault.depositAmount(user2.address)).equal(0);
-  //       expect(await tokenVault.status(user2.address)).equal("DepositConfirmed");
-  //       expect(await tokenVault.balanceOf(user2.address)).equal(AMOUNT);
-  //       // preWithdraw
-  //       await tokenVault.connect(user1).preWithdraw(AMOUNT);
-  //       expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(AMOUNT);
-  //       expect(await tokenVault.balanceOf(user1.address)).equal(0);
-  //       expect(await tokenVault.pendingWithdrawAddresses(0)).equal(user1.address);
-  //       await tokenVault.connect(user2).preWithdraw(5);
-  //       expect(await tokenVault.shareAmountToRedeem(user2.address)).equal(5);
-  //       expect(await tokenVault.balanceOf(user2.address)).equal("149999999999999999995");
-  //       expect(await tokenVault.pendingWithdrawAddresses(0)).equal(user1.address);
-  //       await tokenVault.connect(user2).preWithdraw(100000);
-  //       expect(await tokenVault.shareAmountToRedeem(user2.address)).equal(100005);
-  //       expect(await tokenVault.balanceOf(user2.address)).equal("149999999999999899995");
-  //       expect(await tokenVault.pendingWithdrawAddresses(1)).equal(user2.address);
-  //       // executeWithdraw
-  //       expect(await token.balanceOf(user1)).to.equal(0);
-  //       await tokenVault.connect(admin).executeWithdraw();
-  //       expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(0);
-  //       expect(await tokenVault.status(user1.address)).equal("WithdrawConfirmed");
-  //       expect(await token.balanceOf(user1)).to.equal(AMOUNT);
-  //       let shareAmountToRedeem = await tokenVault.shareAmountToRedeem(user1.address);
-  //       let status = await tokenVault.status(user1.address);
-  //       let paymentToken = await token.balanceOf(user1.address);
-  //       let shares = await tokenVault.balanceOf(user1.address);
-  //       console.log({ shareAmountToRedeem, status, paymentToken, shares });
-  //       // whole flow
-  //       await token.connect(user1).approve(tokenVault.target, depositAmount);
-  //       await tokenVault.connect(user1).preDeposit(5);
-  //       expect(await tokenVault.depositAmount(user1.address)).equal(5);
-  //       await tokenVault.connect(admin).executeDeposit();
-  //       await tokenVault.connect(user1).preWithdraw(3);
-  //       expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(3);
-  //       await tokenVault.connect(user1).preWithdraw(2);
-  //       expect(await tokenVault.shareAmountToRedeem(user1.address)).equal(5);
-  //       await tokenVault.connect(admin).executeWithdraw();
-  //       shareAmountToRedeem = await tokenVault.shareAmountToRedeem(user1.address);
-  //       status = await tokenVault.status(user1.address);
-  //       paymentToken = await token.balanceOf(user1.address);
-  //       shares = await tokenVault.balanceOf(user1.address);
-  //       console.log({ shareAmountToRedeem, status, paymentToken, shares });
-  //     });
-  //   });
+      expect(await paymentToken.balanceOf(user1.address)).to.equal("990000000"); // this test should be lower TETHER_STARTING_BALANCE
 
-  // Additional tests can include various scenarios, such as attempting to deposit more than the allowance,
-  // trying to confirm deposit for addresses with no pending deposits, and so on.
+      await tokenVault.connect(admin).redeem(userRedeemId);
+
+      expect(await paymentToken.balanceOf(user1.address)).to.equal("1000000000"); //back to starting balance
+    });
+  });
+  describe("cancelDeposit", function () {
+    it("should cancel a deposit request and refund the tokens", async function () {
+      const { user1, paymentToken, tokenVault } = await loadFixture(deployTokenVaultFixture);
+
+      // User1 requests a deposit
+      await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+
+      // Get the depositId for the created request
+      const userDepositId = await tokenVault.userDepositRecord(user1.address);
+
+      // Balance before cancellation
+      const balanceBefore = await paymentToken.balanceOf(user1.address);
+
+      expect(balanceBefore).to.equal(990000000);
+      // Cancel the deposit request
+      await expect(tokenVault.connect(user1).cancelDeposit(userDepositId))
+        .to.emit(tokenVault, "DepositCancelled")
+        .withArgs(userDepositId, user1.address);
+
+      // Verify the deposit record status is updated to cancelled (assuming '3' is for canceled)
+      const depositRecord = await tokenVault.depositRecords(userDepositId);
+      expect(depositRecord.status).to.equal(3);
+
+      // Balance after cancellation should be back to initial since tokens are refunded
+      const balanceAfter = await paymentToken.balanceOf(user1.address);
+      expect(balanceAfter).to.equal(1000000000);
+    });
+  });
+  describe("cancelRedeem", function () {
+    it("should allow a redeemer to cancel a redeem request and refund the shares", async function () {
+      const { user1, tokenVault, admin } = await loadFixture(deployTokenVaultFixture);
+      const SHARES_TO_REDEEM = AMOUNT; // Example amount of shares
+      await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      await tokenVault.connect(admin).deposit(1n, user1.address);
+      expect(await tokenVault.balanceOf(user1.address)).equal(AMOUNT_TO_STAKE);
+      await tokenVault.connect(user1).approve(tokenVault.target, AMOUNT_TO_STAKE);
+      expect(await tokenVault.balanceOf(user1.address)).equal(10000000);
+      await tokenVault.connect(user1).requestRedeem(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+      const userRedeemId = await tokenVault.userRedeemRecord(user1.address);
+      // Before cancellation, check user1's share balance
+      expect(await tokenVault.balanceOf(user1.address)).equal(0);
+      // Cancel the redeem
+      await expect(tokenVault.connect(user1).cancelRedeem(userRedeemId))
+        .to.emit(tokenVault, "RedeemCancelled")
+        .withArgs(userRedeemId, user1.address);
+
+      // After cancellation, check user1's share balance has been refunded
+      expect(await tokenVault.balanceOf(user1.address)).equal(10000000);
+      // expect(finalShares).to.be.above(initialShares);
+    });
+  });
 });

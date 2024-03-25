@@ -93,7 +93,6 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
     ) external returns (uint256 requestId) {
         require(shares > 0, "Shares must be greater than 0");
         require(this.balanceOf(msg.sender) >= shares, "Insufficient shares");
-        // Logic to reduce shares from the sender
         _burn(receiver, shares);
         requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
         redeemRecords[requestId] = RedeemRecord({
@@ -140,6 +139,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         record.status = 3;
         emit DepositCancelled(requestId, record.depositor);
     }
+
     function cancelRedeem(uint256 requestId) external {
         RedeemRecord storage record = redeemRecords[requestId];
         require(msg.sender == record.depositor, "Only depositor can cancel");
@@ -198,5 +198,39 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         uint256 shares
     ) public {
         emit RedeemClaimable(owner, 0, assets, shares);
+    }
+
+    function previewDeposit(
+        uint256 assets
+    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
+        revert();
+    }
+
+    /** @dev See {IERC4626-previewMint}. */
+    function previewMint(
+        uint256 shares
+    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
+        revert();
+    }
+
+    /** @dev See {IERC4626-withdraw}. */
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public virtual override(IERC4626, SimpleVault) returns (uint256) {
+        revert();
+    }
+
+    function previewRedeem(
+        uint256 shares
+    ) public view virtual returns (uint256) {
+        revert();
+    }
+
+    function previewWithdraw(
+        uint256 assets
+    ) public view virtual returns (uint256) {
+        revert();
     }
 }

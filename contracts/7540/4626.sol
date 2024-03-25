@@ -333,7 +333,6 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         //
         // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
         // shares are burned and after the assets are transferred, which is a valid state.
-        _burn(owner, shares);
         SafeERC20.safeTransfer(_asset, receiver, assets);
 
         emit Withdraw(caller, receiver, owner, assets, shares);

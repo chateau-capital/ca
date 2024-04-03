@@ -15,8 +15,8 @@ contract NotAmerica {
 
     modifier NOT_AMERICAN() {
         // to bypass modifier uncomment below
-        // _;
-        // return;
+        _;
+        return;
         IQuadPassportStore.Attribute[] memory attributes = reader.getAttributes(
             msg.sender,
             keccak256("COUNTRY")

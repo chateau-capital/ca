@@ -129,13 +129,13 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         require(msg.sender == record.depositor, "Only depositor can cancel");
         require(record.status == 1, "Deposit not pending");
         // Refund the deposited tokens back to the depositor
+        // Update the deposit record status to indicate cancellation (assuming '3' is for canceled)
+        record.status = 3;
         SafeERC20.safeTransfer(
             IERC20(paymentToken),
             record.depositor,
             record.assets
         );
-        // Update the deposit record status to indicate cancellation (assuming '3' is for canceled)
-        record.status = 3;
         emit DepositCancelled(requestId, record.depositor);
     }
 
@@ -188,6 +188,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         uint256 assets,
         uint256 shares
     ) public {
+        revert()
         emit DepositClaimable(owner, 0, assets, shares);
     }
 
@@ -196,6 +197,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         uint256 assets,
         uint256 shares
     ) public {
+        revert()
         emit RedeemClaimable(owner, 0, assets, shares);
     }
 

@@ -195,22 +195,6 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         return _convertToAssets(shares, Math.Rounding.Floor);
     }
 
-    /** @dev See {IERC4626-deposit}. */
-    // function deposit(
-    //     uint256 assets,
-    //     address receiver
-    // ) public virtual returns (uint256) {
-    //     uint256 maxAssets = maxDeposit(receiver);
-    //     if (assets > maxAssets) {
-    //         revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-    //     }
-
-    //     uint256 shares = previewDeposit(assets);
-    //     _deposit(_msgSender(), receiver, assets, shares);
-
-    //     return shares;
-    // }
-
     /** @dev See {IERC4626-mint}. */
     function mint(
         uint256 shares,

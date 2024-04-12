@@ -14,6 +14,8 @@
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "lint": "hardhat lint",
+    "deploy-reverse-ftm": "hardhat run scripts/reverse/deploy-tokens.js --network fantom",
+    "deposit-reverse-ftm": "hardhat run scripts/reverse/reverse-deposit.js --network fantom",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
     "deploy:bera": "hardhat run scripts/deploy.js --network bera",
     "deploy:arbitrumSepolia": "hardhat run scripts/deploy.js --network arbitrumSepolia"

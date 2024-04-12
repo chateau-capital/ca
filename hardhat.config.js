@@ -27,6 +27,11 @@ module.exports = {
       saveDeployments: true,
       tags: ["arbitrum"],
     },
+    fantom: {
+      url: "https://rpcapi.fantom.network",
+      accounts: [process.env.FTM_PRIVATE_KEY],
+      allowUnlimitedContractSize: true,
+    },
     // neondevnet: {
     //   url: "https://devnet.neonevm.org",
     //   accounts: [process.env.PRIVATE_KEY],

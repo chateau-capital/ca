@@ -238,7 +238,7 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
         uint256 assets,
         Math.Rounding rounding
     ) public view virtual returns (uint256) {
-        uint256 assetValue = (assets * 1e12) / _price; // Adjust asset value based on price
+        return ((assets * 1e12) / _price) * 1e18; // Adjust asset value based on price
     }
 
     // Updated convertToAssets to account for price
@@ -246,7 +246,7 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
         uint256 shares,
         Math.Rounding rounding
     ) public view virtual returns (uint256) {
-        return (shares * _price) / 1e12; // Convert share value back to asset value based on price
+        return (shares * _price) / 1e30; // Convert share value back to asset value based on price
     }
     // /**
     //  * @dev Internal conversion function (from assets to shares) with support for rounding direction.

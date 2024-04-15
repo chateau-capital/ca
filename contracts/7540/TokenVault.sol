@@ -33,7 +33,7 @@ contract TokenVault is IERC7540, SimpleVault {
     struct RedeemRecord {
         address depositor;
         address receiver;
-        uint256 assets;
+        uint256 shares;
         uint256 status; // 1 pending 2 complete 3 canceled
     }
     struct DepositRecord {
@@ -94,7 +94,7 @@ contract TokenVault is IERC7540, SimpleVault {
         depositRecords[requestId] = DepositRecord({
             depositor: msg.sender,
             receiver: receiver,
-            assets: assets,
+            assets: assets, // amount of USDC provided
             status: 1
         });
         userDepositRecord[owner] = requestId;
@@ -143,7 +143,7 @@ contract TokenVault is IERC7540, SimpleVault {
         redeemRecords[requestId] = RedeemRecord({
             depositor: msg.sender,
             receiver: receiver,
-            assets: shares,
+            shares: shares,
             status: 1
         });
         userRedeemRecord[msg.sender] = requestId;
@@ -159,18 +159,18 @@ contract TokenVault is IERC7540, SimpleVault {
     function redeem(uint256 requestId) external onlyOwner {
         RedeemRecord storage record = redeemRecords[requestId];
         require(record.status == 1, "No pending redeem");
+        uint256 payment = convertToAssets(record.shares);
         require(
-            paymentToken.balanceOf(address(this)) >= record.assets,
+            paymentToken.balanceOf(address(this)) >= payment,
             "not enough stables in account"
         );
-        uint256 assets = convertToAssets(record.assets); // Implement this conversion
-        SafeERC20.safeTransfer(IERC20(paymentToken), record.receiver, assets);
+        SafeERC20.safeTransfer(IERC20(paymentToken), record.receiver, payment);
         record.status = 2;
         emit RedeemClaimable(
             record.depositor,
             requestId,
-            record.assets,
-            assets
+            payment,
+            record.shares
         );
     }
 
@@ -201,7 +201,7 @@ contract TokenVault is IERC7540, SimpleVault {
         RedeemRecord storage record = redeemRecords[requestId];
         require(msg.sender == record.depositor, "Only depositor can cancel");
         require(record.status == 1, "Redeem not pending");
-        _mint(record.depositor, record.assets);
+        _mint(record.depositor, record.shares);
         record.status = 3;
         emit RedeemCancelled(requestId, record.depositor);
     }
@@ -233,7 +233,7 @@ contract TokenVault is IERC7540, SimpleVault {
         address owner
     ) external view returns (uint256 pendingShares) {
         RedeemRecord memory record = redeemRecords[requestId];
-        return record.assets;
+        return record.shares;
     }
 
     /**
@@ -262,8 +262,8 @@ contract TokenVault is IERC7540, SimpleVault {
         address owner
     ) external view returns (uint256 claimableShares) {
         RedeemRecord memory record = redeemRecords[requestId];
-        require(record.assets > 0, "no asset to redeem");
-        return record.assets;
+        require(record.shares > 0, "no asset to redeem");
+        return record.shares;
     }
 
     // these don't get used but are required in interface

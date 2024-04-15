@@ -11,8 +11,7 @@ import "../interface/IERC20Burnable.sol";
  * @dev A contract for managing token deposits and redemptions.
  */
 contract TokenVault is IERC7540, SimpleVault, Ownable {
-
-     /**
+    /**
      * @dev Constructor to initialize the TokenVault contract.
      * @param asset_ The address of the asset token.
      * @param _paymentToken The address of the payment token.
@@ -50,7 +49,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
     mapping(address => uint256) public userRedeemRecord;
     uint256 private requestDepositIdCounter;
     uint256 private requestRedeemIdCounter;
-    
+
     // Events
     event DepositCancelled(uint256 requestId, address depositor);
     event RedeemCancelled(uint256 requestId, address depositor);
@@ -152,7 +151,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         return requestId;
     }
 
-     /**
+    /**
      * @dev Processes a redemption request.
      * @param requestId The unique ID of the redemption request.
      */
@@ -174,7 +173,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         );
     }
 
-     /**
+    /**
      * @dev Cancels a deposit request.
      * @param requestId The unique ID of the deposit request to cancel.
      */
@@ -236,7 +235,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         return record.assets;
     }
 
-     /**
+    /**
      * @dev Retrieves the claimable assets for a deposit request.
      * @param requestId The unique ID of the deposit request.
      * @param owner The owner initiating the request.
@@ -251,7 +250,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         return record.assets;
     }
 
-     /**
+    /**
      * @dev Retrieves the claimable shares for a redemption request.
      * @param requestId The unique ID of the redemption request.
      * @param owner The owner initiating the request.
@@ -266,10 +265,9 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         return record.assets;
     }
 
-
     // these don't get used but are required in interface
 
-      /**
+    /**
      * @dev Emits that a deposit is claimable
      * @param shares The amount of shares the user has
      * @param assets The assets redeemable by the shares
@@ -281,11 +279,10 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         uint256 assets,
         uint256 shares
     ) public {
-        revert()
         emit DepositClaimable(owner, 0, assets, shares);
     }
 
-     /**
+    /**
      * @dev Emits that a redemption is claimable
      * @param shares The amount of shares the user has
      * @param assets The assets redeemable by the shares
@@ -297,11 +294,10 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         uint256 assets,
         uint256 shares
     ) public {
-        revert()
         emit RedeemClaimable(owner, 0, assets, shares);
     }
 
-     /**
+    /**
      * @dev Previews a deposit 
      * @param assets The assets to be deposited
 
@@ -313,7 +309,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
     }
 
     /** @dev See {IERC4626-previewMint}. */
-    
+
     function previewMint(
         uint256 shares
     ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
@@ -329,7 +325,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         revert();
     }
 
-     /**
+    /**
      * @dev Previews a redemtion
      * @param shares The amount of shares the user has
      */
@@ -339,7 +335,7 @@ contract TokenVault is IERC7540, SimpleVault, Ownable {
         revert();
     }
 
-     /**
+    /**
      * @dev Emits that a deposit is claimable
      * @param assets The assets redeemable by the shares
      */

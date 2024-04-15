@@ -234,35 +234,49 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
         revert();
     }
 
-    /**
-     * @dev Internal conversion function (from assets to shares) with support for rounding direction.
-     */
     function _convertToShares(
         uint256 assets,
         Math.Rounding rounding
-    ) internal view virtual returns (uint256) {
-        return
-            assets.mulDiv(
-                totalSupply() + 10 ** _decimalsOffset(),
-                totalAssets() + 1,
-                rounding
-            );
+    ) public view virtual returns (uint256) {
+        uint256 assetValue = (assets * 1e12) / _price; // Adjust asset value based on price
     }
 
-    /**
-     * @dev Internal conversion function (from shares to assets) with support for rounding direction.
-     */
+    // Updated convertToAssets to account for price
     function _convertToAssets(
         uint256 shares,
         Math.Rounding rounding
-    ) internal view virtual returns (uint256) {
-        return
-            shares.mulDiv(
-                totalAssets() + 1,
-                totalSupply() + 10 ** _decimalsOffset(),
-                rounding
-            );
+    ) public view virtual returns (uint256) {
+        return (shares * _price) / 1e12; // Convert share value back to asset value based on price
     }
+    // /**
+    //  * @dev Internal conversion function (from assets to shares) with support for rounding direction.
+    //  */
+    // function _convertToShares(
+    //     uint256 assets,
+    //     Math.Rounding rounding
+    // ) internal view virtual returns (uint256) {
+    //     return
+    //         assets.mulDiv(
+    //             totalSupply() + 10 ** _decimalsOffset(),
+    //             totalAssets() + 1,
+    //             rounding
+    //         );
+    // }
+
+    // /**
+    //  * @dev Internal conversion function (from shares to assets) with support for rounding direction.
+    //  */
+    // function _convertToAssets(
+    //     uint256 shares,
+    //     Math.Rounding rounding
+    // ) internal view virtual returns (uint256) {
+    //     return
+    //         shares.mulDiv(
+    //             totalAssets() + 1,
+    //             totalSupply() + 10 ** _decimalsOffset(),
+    //             rounding
+    //         );
+    // }
 
     /**
      * @dev Deposit/mint common workflow.

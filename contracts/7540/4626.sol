@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -48,11 +49,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-abstract contract SimpleVault is ERC20, IERC4626 {
+abstract contract SimpleVault is ERC20, IERC4626, Ownable {
     using Math for uint256;
 
     IERC20 internal immutable _asset;
     uint8 private immutable _underlyingDecimals;
+    uint256 private _price; // Price of the asset in terms of the USYC
 
     /**
      * @dev Attempted to deposit more assets than the max amount for `receiver`.
@@ -89,6 +91,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         (bool success, uint8 assetDecimals) = _tryGetAssetDecimals(asset_);
         _underlyingDecimals = success ? assetDecimals : 18;
         _asset = asset_;
+        _price = 1e18;
     }
 
     /**
@@ -123,6 +126,16 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         returns (uint8)
     {
         return _underlyingDecimals + _decimalsOffset();
+    }
+
+    function getPrice() public view returns (uint256) {
+        return _price;
+    }
+
+    // Setter for price
+    function setPrice(uint256 newPrice) external onlyOwner {
+        require(newPrice > 0, "Price must be greater than 0");
+        _price = newPrice;
     }
 
     /** @dev See {IERC4626-asset}. */
@@ -161,7 +174,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
 
     /** @dev See {IERC4626-maxWithdraw}. */
     function maxWithdraw(address owner) public view virtual returns (uint256) {
-        return _convertToAssets(balanceOf(owner), Math.Rounding.Floor);
+        revert();
     }
 
     /** @dev See {IERC4626-maxRedeem}. */
@@ -200,15 +213,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         uint256 shares,
         address receiver
     ) public virtual returns (uint256) {
-        uint256 maxShares = maxMint(receiver);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
-        }
-
-        uint256 assets = previewMint(shares);
-        _deposit(_msgSender(), receiver, assets, shares);
-
-        return assets;
+        revert();
     }
 
     /** @dev See {IERC4626-withdraw}. */
@@ -217,15 +222,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         address receiver,
         address owner
     ) public virtual returns (uint256) {
-        uint256 maxAssets = maxWithdraw(owner);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
-        }
-
-        uint256 shares = previewWithdraw(assets);
-        _withdraw(_msgSender(), receiver, owner, assets, shares);
-
-        return shares;
+        revert();
     }
 
     /** @dev See {IERC4626-redeem}. */
@@ -234,15 +231,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         address receiver,
         address owner
     ) public virtual returns (uint256) {
-        uint256 maxShares = maxRedeem(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
-
-        uint256 assets = previewRedeem(shares);
-        _withdraw(_msgSender(), receiver, owner, assets, shares);
-
-        return assets;
+        revert();
     }
 
     /**
@@ -284,17 +273,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         uint256 assets,
         uint256 shares
     ) internal virtual {
-        // If _asset is ERC-777, `transferFrom` can trigger a reentrancy BEFORE the transfer happens through the
-        // `tokensToSend` hook. On the other hand, the `tokenReceived` hook, that is triggered after the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer before we mint so that any reentrancy would happen before the
-        // assets are transferred and before the shares are minted, which is a valid state.
-        // slither-disable-next-line reentrancy-no-eth
-        SafeERC20.safeTransferFrom(_asset, caller, address(this), assets);
-        _mint(receiver, shares);
-
-        emit Deposit(caller, receiver, assets, shares);
+        revert();
     }
 
     /**
@@ -307,19 +286,7 @@ abstract contract SimpleVault is ERC20, IERC4626 {
         uint256 assets,
         uint256 shares
     ) internal virtual {
-        if (caller != owner) {
-            _spendAllowance(owner, caller, shares);
-        }
-
-        // If _asset is ERC-777, `transfer` can trigger a reentrancy AFTER the transfer happens through the
-        // `tokensReceived` hook. On the other hand, the `tokensToSend` hook, that is triggered before the transfer,
-        // calls the vault, which is assumed not malicious.
-        //
-        // Conclusion: we need to do the transfer after the burn so that any reentrancy would happen after the
-        // shares are burned and after the assets are transferred, which is a valid state.
-        SafeERC20.safeTransfer(_asset, receiver, assets);
-
-        emit Withdraw(caller, receiver, owner, assets, shares);
+        revert();
     }
 
     function _decimalsOffset() internal view virtual returns (uint8) {

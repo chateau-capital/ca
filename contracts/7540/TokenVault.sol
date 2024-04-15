@@ -8,9 +8,10 @@ import "../interface/IERC20Burnable.sol";
 
 /**
  * @title TokenVault
+ * @author Tyler Fischer
  * @dev A contract for managing token deposits and redemptions.
  */
-contract TokenVault is IERC7540, SimpleVault, Ownable {
+contract TokenVault is IERC7540, SimpleVault {
     /**
      * @dev Constructor to initialize the TokenVault contract.
      * @param asset_ The address of the asset token.

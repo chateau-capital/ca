@@ -5,29 +5,34 @@ import "./4626.sol";
 import "../interface/IERC7540.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interface/IERC20Burnable.sol";
+import "../utils/NotAmerica.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title TokenVault
  * @author Tyler Fischer
  * @dev A contract for managing token deposits and redemptions.
  */
-contract TokenVault is IERC7540, SimpleVault {
+contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     /**
      * @dev Constructor to initialize the TokenVault contract.
-     * @param asset_ The address of the asset token.
+     * @param _asset The address of the asset token.
      * @param _paymentToken The address of the payment token.
-     * @param owner The owner of the contract.
+     * @param _owner The owner of the contract.
      */
     constructor(
-        IERC20 asset_,
+        IERC20 _asset,
         IERC20 _paymentToken,
-        address owner
-    ) SimpleVault(asset_) Ownable(owner) {
+        address _owner,
+        address _depositAddress
+    ) SimpleVault(_asset) Ownable(_owner) {
         paymentToken = _paymentToken;
+        depositAddress = _depositAddress;
     }
 
     // State variables
     IERC20 public paymentToken;
+    address public depositAddress;
 
     // Structs
     struct RedeemRecord {
@@ -77,12 +82,12 @@ contract TokenVault is IERC7540, SimpleVault {
         address receiver,
         address owner,
         bytes calldata data
-    ) external returns (uint256 requestId) {
+    ) external whenNotPaused NOT_AMERICAN returns (uint256 requestId) {
         require(owner == msg.sender, "Owner must be sender");
         require(assets > 0, "Assets must be greater than 0");
         require(
             paymentToken.balanceOf(msg.sender) >= assets,
-            "amount is greater than user balance"
+            "Amount is greater than user balance"
         );
         SafeERC20.safeTransferFrom(
             IERC20(paymentToken),
@@ -116,9 +121,20 @@ contract TokenVault is IERC7540, SimpleVault {
         DepositRecord storage record = depositRecords[requestId];
         require(receiver == record.receiver, "Receiver mismatch");
         require(record.status == 1, "No pending deposit");
+        require(
+            paymentToken.balanceOf(address(this)) >= record.assets,
+            "Amount is greater than user balance"
+        );
         shares = convertToShares(record.assets);
         _mint(receiver, shares);
         record.status = 2;
+        paymentToken.approve(address(this), record.assets);
+        SafeERC20.safeTransferFrom(
+            IERC20(paymentToken),
+            address(this),
+            depositAddress,
+            record.assets
+        );
         emit DepositClaimable(receiver, requestId, record.assets, shares);
     }
 
@@ -135,7 +151,8 @@ contract TokenVault is IERC7540, SimpleVault {
         address receiver,
         address owner,
         bytes calldata data
-    ) external returns (uint256 requestId) {
+    ) external whenNotPaused NOT_AMERICAN returns (uint256 requestId) {
+        require(owner == msg.sender, "Owner must be sender");
         require(shares > 0, "Shares must be greater than 0");
         require(this.balanceOf(msg.sender) >= shares, "Insufficient shares");
         _burn(receiver, shares);
@@ -178,10 +195,14 @@ contract TokenVault is IERC7540, SimpleVault {
      * @dev Cancels a deposit request.
      * @param requestId The unique ID of the deposit request to cancel.
      */
-    function cancelDeposit(uint256 requestId) external {
+    function cancelDeposit(uint256 requestId) external whenNotPaused {
         DepositRecord storage record = depositRecords[requestId];
         require(msg.sender == record.depositor, "Only depositor can cancel");
         require(record.status == 1, "Deposit not pending");
+        require(
+            paymentToken.balanceOf(address(this)) >= record.assets,
+            "No funds currently in contract"
+        );
         // Refund the deposited tokens back to the depositor
         // Update the deposit record status to indicate cancellation (assuming '3' is for canceled)
         record.status = 3;
@@ -197,7 +218,7 @@ contract TokenVault is IERC7540, SimpleVault {
      * @dev Cancels a redemption request.
      * @param requestId The unique ID of the redemption request to cancel.
      */
-    function cancelRedeem(uint256 requestId) external {
+    function cancelRedeem(uint256 requestId) external whenNotPaused {
         RedeemRecord storage record = redeemRecords[requestId];
         require(msg.sender == record.depositor, "Only depositor can cancel");
         require(record.status == 1, "Redeem not pending");
@@ -344,5 +365,13 @@ contract TokenVault is IERC7540, SimpleVault {
         uint256 assets
     ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
         revert();
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }

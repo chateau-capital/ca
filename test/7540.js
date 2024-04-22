@@ -11,13 +11,14 @@ const AMOUNT_TO_STAKE = ethers.parseUnits("1", 7); // 10 tether
 const TETHER_STARTING_BALANCE = ethers.parseUnits("1", 8); // 1000 tether
 describe("TokenVault", function () {
   async function deployTokenVaultFixture() {
-    const [admin, user1, user2] = await ethers.getSigners();
+    const [admin, user1, user2, multiSig] = await ethers.getSigners();
+
     const Token = await hre.ethers.deployContract("USDT");
     const paymentToken = await Token.waitForDeployment();
     const Share = await ethers.getContractFactory("Share");
     const share = await Share.deploy("Share", "SHARE");
     const d7540 = await ethers.getContractFactory("TokenVault");
-    const tokenVault = await d7540.deploy(share.target, paymentToken.target, admin.address);
+    const tokenVault = await d7540.deploy(share.target, paymentToken.target, admin.address, multiSig.address);
 
     await paymentToken.mint(user1.address, TETHER_STARTING_BALANCE);
     await paymentToken.connect(user1).approve(tokenVault.target, TETHER_STARTING_BALANCE);
@@ -25,7 +26,7 @@ describe("TokenVault", function () {
     await paymentToken.connect(user2).approve(tokenVault.target, TETHER_STARTING_BALANCE);
     await paymentToken.mint(admin.address, TETHER_STARTING_BALANCE);
     await paymentToken.connect(admin).approve(tokenVault.target, TETHER_STARTING_BALANCE);
-    return { admin, user1, user2, paymentToken, tokenVault, share };
+    return { admin, user1, user2, multiSig, paymentToken, tokenVault, share };
   }
   describe("deployment", function () {
     it("USDC should be the payment token, Share should be the share token", async function () {
@@ -43,13 +44,9 @@ describe("TokenVault", function () {
       // const initialBalanceReceiver = await paymentToken.balanceOf(user2.address);
       const initialDepositRecord = await tokenVault.depositRecords(user1.address); // Adjust according to how you access deposit records
 
-      // depositor
       expect(initialDepositRecord[0]).equal("0x0000000000000000000000000000000000000000");
-      // receiver
       expect(initialDepositRecord[1]).equal("0x0000000000000000000000000000000000000000");
-      // asset amount deposited
       expect(initialDepositRecord[2]).equal(0n);
-      // complete
       expect(initialDepositRecord[3]).equal("");
 
       expect(await paymentToken.balanceOf(user1.address)).to.equal(TETHER_STARTING_BALANCE);
@@ -131,11 +128,14 @@ describe("TokenVault", function () {
   });
   describe("redeem process", function () {
     it("should update the deposit record and mint shares correctly", async function () {
-      const { user1, tokenVault, share, admin, paymentToken } = await loadFixture(deployTokenVaultFixture);
+      const { user1, tokenVault, share, admin, paymentToken, multiSig } = await loadFixture(deployTokenVaultFixture);
       const SHARES_TO_REDEEM = AMOUNT; // Example amount of shares
       await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+
+      expect(await paymentToken.balanceOf(multiSig)).equal(0);
       expect(await tokenVault.balanceOf(user1.address)).equal(0);
       await tokenVault.connect(admin).deposit(1n, user1.address);
+      expect(await paymentToken.balanceOf(multiSig)).equal(AMOUNT_TO_STAKE);
       expect(await tokenVault.balanceOf(user1.address)).equal(ANOTHER_AMOUNT);
       await tokenVault.connect(user1).approve(tokenVault.target, AMOUNT_TO_STAKE);
       expect(await tokenVault.connect(user1).requestRedeem(ANOTHER_AMOUNT, user1.address, user1.address, "0x"))
@@ -144,10 +144,13 @@ describe("TokenVault", function () {
       expect(await tokenVault.balanceOf(user1.address)).equal(0);
       const userRedeemId = await tokenVault.userRedeemRecord(user1.address);
 
-      expect(await paymentToken.balanceOf(user1.address)).to.equal("90000000"); // this test should be lower TETHER_STARTING_BALANCE
+      await paymentToken.connect(multiSig).approve(tokenVault.target, AMOUNT_TO_STAKE);
+      await paymentToken.connect(multiSig).transfer(tokenVault.target, AMOUNT_TO_STAKE);
 
+      expect(await paymentToken.balanceOf(user1.address)).to.equal("90000000"); // this test should be lower TETHER_STARTING_BALANCE
       await tokenVault.connect(admin).redeem(userRedeemId);
 
+      expect(await tokenVault.balanceOf(multiSig)).equal(0);
       expect(await paymentToken.balanceOf(user1.address)).to.equal("100000000"); //back to starting balance
     });
   });
@@ -223,5 +226,23 @@ describe("TokenVault", function () {
     await expect(tokenVault.connect(user1).setPrice(newPrice)).to.be.rejected; // Assuming use of OpenZeppelin's Ownable for access control
 
     expect(await tokenVault.getPrice()).to.equal(oldPrice);
+  });
+
+  describe("when the contract is paused", function () {
+    it("should prevent deposits", async function () {
+      const { admin, user1, tokenVault, paymentToken } = await loadFixture(deployTokenVaultFixture);
+      // Pause the contract
+      await tokenVault.connect(admin).pause();
+
+      // await tokenVault.connect(user1).requestDeposit(1000, user1.address, user1.address, "0x");
+      expect(true);
+      // Try to make a deposit
+      await expect(tokenVault.connect(user1).requestDeposit(1000, user1.address, user1.address, "0x")).to.be.rejected;
+
+      await tokenVault.connect(admin).unpause();
+
+      expect(await tokenVault.connect(user1).requestDeposit(1000, user1.address, user1.address, "0x"));
+      expect(true);
+    });
   });
 });

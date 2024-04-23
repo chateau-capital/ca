@@ -54,6 +54,7 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
 
     IERC20 internal immutable _asset;
     uint8 private immutable _underlyingDecimals;
+    mapping(address => bool) private _frozenAccounts;
     uint256 private _price; // Price of the asset in terms of the USYC
 
     /**
@@ -140,12 +141,12 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
 
     /** @dev See {IERC4626-asset}. */
     function asset() public view virtual returns (address) {
-        return address(_asset);
+        revert();
     }
 
     /** @dev See {IERC4626-totalAssets}. */
     function totalAssets() public view virtual returns (uint256) {
-        return _asset.balanceOf(address(this));
+        revert();
     }
 
     /** @dev See {IERC4626-convertToShares}. */
@@ -280,5 +281,35 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
 
     function _decimalsOffset() internal view virtual returns (uint8) {
         return 0;
+    }
+
+    function freezeAccount(address account) external onlyOwner {
+        _frozenAccounts[account] = true;
+        emit AccountFrozen(account);
+    }
+
+    function unfreezeAccount(address account) external onlyOwner {
+        _frozenAccounts[account] = false;
+        emit AccountUnfrozen(account);
+    }
+
+    event AccountFrozen(address indexed account);
+    event AccountUnfrozen(address indexed account);
+
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) public override(ERC20, IERC20) returns (bool) {
+        require(!_frozenAccounts[msg.sender], "Account is frozen");
+        return super.transfer(recipient, amount);
+    }
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public override(ERC20, IERC20) returns (bool) {
+        require(!_frozenAccounts[sender], "Account is frozen");
+        return super.transferFrom(sender, recipient, amount);
     }
 }

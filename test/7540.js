@@ -11,14 +11,20 @@ const AMOUNT_TO_STAKE = ethers.parseUnits("1", 7); // 10 tether
 const TETHER_STARTING_BALANCE = ethers.parseUnits("1", 8); // 1000 tether
 describe("TokenVault", function () {
   async function deployTokenVaultFixture() {
-    const [admin, user1, user2, multiSig] = await ethers.getSigners();
+    const [admin, user1, user2, multiSig, priceSetter] = await ethers.getSigners();
 
     const Token = await hre.ethers.deployContract("USDT");
     const paymentToken = await Token.waitForDeployment();
     const Share = await ethers.getContractFactory("Share");
     const share = await Share.deploy("Share", "SHARE");
     const d7540 = await ethers.getContractFactory("TokenVault");
-    const tokenVault = await d7540.deploy(share.target, paymentToken.target, admin.address, multiSig.address);
+    const tokenVault = await d7540.deploy(
+      share.target,
+      paymentToken.target,
+      admin.address,
+      multiSig.address,
+      priceSetter.address
+    );
 
     await paymentToken.mint(user1.address, TETHER_STARTING_BALANCE);
     await paymentToken.connect(user1).approve(tokenVault.target, TETHER_STARTING_BALANCE);
@@ -26,7 +32,7 @@ describe("TokenVault", function () {
     await paymentToken.connect(user2).approve(tokenVault.target, TETHER_STARTING_BALANCE);
     await paymentToken.mint(admin.address, TETHER_STARTING_BALANCE);
     await paymentToken.connect(admin).approve(tokenVault.target, TETHER_STARTING_BALANCE);
-    return { admin, user1, user2, multiSig, paymentToken, tokenVault, share };
+    return { admin, user1, user2, multiSig, paymentToken, tokenVault, share, priceSetter };
   }
   describe("deployment", function () {
     it("USDC should be the payment token, Share should be the share token", async function () {
@@ -205,12 +211,12 @@ describe("TokenVault", function () {
     });
   });
   it("should allow the owner to update the price", async function () {
-    const { admin, tokenVault } = await loadFixture(deployTokenVaultFixture);
+    const { admin, tokenVault, priceSetter } = await loadFixture(deployTokenVaultFixture);
     const newPrice = ethers.parseUnits("1.1", 18); // New price to set
     const oldPrice = ethers.parseUnits("1.0", 18); // New price to set
     expect(await tokenVault.getPrice()).to.equal(oldPrice);
     // Update the price
-    await tokenVault.connect(admin).setPrice(newPrice);
+    await tokenVault.connect(priceSetter).setPrice(newPrice);
 
     // Verify the price was updated correctly
     expect(await tokenVault.getPrice()).to.equal(newPrice);

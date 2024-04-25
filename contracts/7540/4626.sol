@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+import "@openzeppelin/contracts/access/AccessControl.sol";
 /**
  * @dev Implementation of the ERC-4626 "Tokenized Vault Standard" as defined in
  * https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
@@ -49,9 +49,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-abstract contract SimpleVault is ERC20, IERC4626, Ownable {
+abstract contract SimpleVault is ERC20, IERC4626, Ownable, AccessControl {
     using Math for uint256;
-
+    bytes32 public constant PRICE_SETTER_ROLE = keccak256("PRICE_SETTER_ROLE");
     IERC20 internal immutable _asset;
     uint8 private immutable _underlyingDecimals;
     mapping(address => bool) private _frozenAccounts;
@@ -134,7 +134,7 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
     }
 
     // Setter for price
-    function setPrice(uint256 newPrice) external onlyOwner {
+    function setPrice(uint256 newPrice) external onlyRole(PRICE_SETTER_ROLE) {
         require(newPrice > 0, "Price must be greater than 0");
         _price = newPrice;
     }
@@ -291,6 +291,13 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable {
     function unfreezeAccount(address account) external onlyOwner {
         _frozenAccounts[account] = false;
         emit AccountUnfrozen(account);
+    }
+    function grantPriceSetter(address account) public onlyOwner {
+        grantRole(PRICE_SETTER_ROLE, account);
+    }
+
+    function revokePriceSetter(address account) public onlyOwner {
+        revokeRole(PRICE_SETTER_ROLE, account);
     }
 
     event AccountFrozen(address indexed account);

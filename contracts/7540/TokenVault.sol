@@ -24,16 +24,17 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         IERC20 _asset,
         IERC20 _paymentToken,
         address _owner,
-        address _depositAddress
+        address _depositAddress,
+        address _priceControllerAddress
     ) SimpleVault(_asset) Ownable(_owner) {
         paymentToken = _paymentToken;
         depositAddress = _depositAddress;
+        _grantRole(PRICE_SETTER_ROLE, _priceControllerAddress);
     }
 
     // State variables
     IERC20 public paymentToken;
     address public depositAddress;
-
     // Structs
     struct RedeemRecord {
         address depositor;

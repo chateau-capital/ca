@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { keccak256, toUtf8Bytes, hexlify } = require("ethers");
+const { keccak256, toUtf8Bytes, hexlify, parseEther } = require("ethers");
 
 const AMOUNT = "150000000000000000000";
 const ANOTHER_AMOUNT = "10000000000000000000";
@@ -307,5 +307,46 @@ describe("TokenVault", function () {
     //     " is missing role " +
     //     hexlify(keccak256(toUtf8Bytes("DEFAULT_ADMIN_ROLE")))
     // );
+  });
+  it("should return the existing deposit request ID if one is already pending", async function () {
+    const { tokenVault, admin, user1, paymentToken } = await loadFixture(deployTokenVaultFixture);
+
+    expect(await paymentToken.balanceOf(user1.address)).to.equal(TETHER_STARTING_BALANCE);
+    await expect(await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x"))
+      .to.emit(tokenVault, "DepositRequest")
+      .withArgs(user1.address, user1.address, 1, user1.address, AMOUNT_TO_STAKE); // Adjust arguments as necessary
+
+    // Post-checks: Verify the balance of the receiver has increased by AMOUNT
+    expect(await paymentToken.balanceOf(user1.address)).to.equal("90000000"); // this test should be lower TETHER_STARTING_BALANCE
+
+    // // verify a user can fetch their record
+    const userDepositId = await tokenVault.userDepositRecord(user1.address); // Adjust according to how you access deposit records
+    expect(userDepositId).equal(1n);
+    // User initiates a deposit request
+    const initialRequestTx = await tokenVault
+      .connect(user1)
+      .requestDeposit("90000000", user1.address, user1.address, "0x");
+    const initialRequestReceipt = await initialRequestTx.wait();
+    const initialRequestId = initialRequestReceipt.events?.filter((x) => x.event === "DepositRequest")[0].args
+      .requestId;
+
+    // User tries to initiate another deposit request
+    const subsequentRequestTx = await tokenVault
+      .connect(user1)
+      .requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+    const subsequentRequestReceipt = await subsequentRequestTx.wait();
+    const subsequentRequestId = subsequentRequestReceipt.events?.filter((x) => x.event === "DepositRequest")[0].args
+      .requestId;
+
+    // Check if the initial and subsequent request IDs are the same, indicating the original request was reused
+    expect(subsequentRequestId).to.equal(initialRequestId);
+
+    // Verify the state of the deposit to ensure it is still pending
+
+    // const userDepositId = await tokenVault.userDepositRecord(user1.address); // Adjust according to how you access deposit records
+    expect(userDepositId).equal(1n);
+
+    expect(await paymentToken.balanceOf(user1.address)).to.equal("90000000"); // this test should be lower TETHER_STARTING_BALANCE
+    expect((await tokenVault.depositRecords(userDepositId))[3]).to.equal(1); // Assuming 1 represents a pending status
   });
 });

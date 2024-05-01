@@ -54,7 +54,7 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     bytes32 public constant PRICE_SETTER_ROLE = keccak256("PRICE_SETTER_ROLE");
     IERC20 internal immutable _asset;
     uint8 private immutable _underlyingDecimals;
-    mapping(address => bool) private _frozenAccounts;
+    mapping(address => bool) public _frozenAccounts;
     uint256 private _price; // Price of the asset in terms of the USYC
 
     /**

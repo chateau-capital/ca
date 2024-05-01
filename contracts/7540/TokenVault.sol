@@ -91,23 +91,31 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
             paymentToken.balanceOf(msg.sender) >= assets,
             "Amount is greater than user balance"
         );
-        SafeERC20.safeTransferFrom(
-            IERC20(paymentToken),
-            msg.sender,
-            address(this),
-            assets
-        );
-        requestId = _generateRequestDepositId(); // Implement this method based on your ID strategy
-        depositRecords[requestId] = DepositRecord({
-            depositor: msg.sender,
-            receiver: receiver,
-            assets: assets, // amount of USDC provided
-            status: 1
-        });
-        userDepositRecord[owner] = requestId;
-        emit DepositRequest(receiver, owner, requestId, msg.sender, assets);
+        requestId = userDepositRecord[msg.sender];
+        DepositRecord storage record = depositRecords[requestId];
 
-        return requestId;
+        // Check if a pending deposit already exists for the sender
+        if (requestId != 0 && record.status == 1) {
+            return requestId; // Return existing pending deposit ID
+        } else {
+            SafeERC20.safeTransferFrom(
+                IERC20(paymentToken),
+                msg.sender,
+                address(this),
+                assets
+            );
+            requestId = _generateRequestDepositId(); // Implement this method based on your ID strategy
+            depositRecords[requestId] = DepositRecord({
+                depositor: msg.sender,
+                receiver: receiver,
+                assets: assets, // amount of USDC provided
+                status: 1
+            });
+            userDepositRecord[owner] = requestId;
+            emit DepositRequest(receiver, owner, requestId, msg.sender, assets);
+
+            return requestId;
+        }
     }
 
     /**

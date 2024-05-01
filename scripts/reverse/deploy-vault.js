@@ -17,7 +17,7 @@ async function main() {
     "Reverse",
     "Repo"
   );
-  await paymentToken.mint("0xf80BA83d2a76E0a30C35FaC345EA26b295a4f63F", "100000000", { gasLimit: 9000000 }); // add funds to test wallet here
+  // await paymentToken.mint("0xf80BA83d2a76E0a30C35FaC345EA26b295a4f63F", "100000000", { gasLimit: 9000000 }); // add funds to test wallet here
   console.table({
     vault: d7540.target,
   });

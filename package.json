@@ -15,7 +15,7 @@
     "coverage": "hardhat coverage",
     "lint": "hardhat lint",
     "reverse-deploy-token-ftm": "hardhat run scripts/reverse/tokens.js --network fantom",
-    "reverse-deploy-vault-ftm": "hardhat run scripts/reverse/vault.js --network fantom",
+    "reverse-deploy-vault-ftm": "hardhat run scripts/reverse/deploy-vault.js --network fantom",
     "reverse-deposit-ftm": "hardhat run scripts/reverse/deposit.js --network fantom",
     "reverse-redeem-ftm": "hardhat run scripts/reverse/redeem.js --network fantom",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",

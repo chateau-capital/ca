@@ -101,7 +101,7 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     }
 
     /** @dev See {IERC4626-maxWithdraw}. */
-    function maxWithdraw(address owner) public view virtual returns (uint256) {
+    function maxWithdraw(address) public view virtual returns (uint256) {
         revert();
     }
 
@@ -137,27 +137,24 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     }
 
     /** @dev See {IERC4626-mint}. */
-    function mint(
-        uint256 shares,
-        address receiver
-    ) public virtual returns (uint256) {
+    function mint(uint256, address) public virtual returns (uint256) {
         revert();
     }
 
     /** @dev See {IERC4626-withdraw}. */
     function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
+        uint256,
+        address,
+        address
     ) public virtual returns (uint256) {
         revert();
     }
 
     /** @dev See {IERC4626-redeem}. */
     function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
+        uint256,
+        address,
+        address
     ) public virtual returns (uint256) {
         revert();
     }
@@ -182,12 +179,7 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     /**
      * @dev Deposit/mint common workflow.
      */
-    function _deposit(
-        address caller,
-        address receiver,
-        uint256 assets,
-        uint256 shares
-    ) internal virtual {
+    function _deposit(address, address, uint256, uint256) internal virtual {
         revert();
     }
 
@@ -195,11 +187,11 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
      * @dev Withdraw/redeem common workflow.
      */
     function _withdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
+        address,
+        address,
+        address,
+        uint256,
+        uint256
     ) internal virtual {
         revert();
     }

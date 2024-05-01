@@ -49,7 +49,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         paymentToken = _paymentToken;
         depositAddress = _depositAddress;
         _grantRole(PRICE_SETTER_ROLE, _priceControllerAddress);
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     }
 
     IERC20 public paymentToken;
@@ -242,12 +242,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     /**
      * @dev Retrieves the pending assets for a deposit request.
      * @param requestId The unique ID of the deposit request.
-     * @param owner The owner initiating the request.
      * @return pendingAssets The amount of pending assets for the deposit request.
      */
     function pendingDepositRequest(
         uint256 requestId,
-        address owner
+        address
     ) external view returns (uint256 pendingAssets) {
         DepositRecord memory record = depositRecords[requestId];
         return record.assets;
@@ -256,12 +255,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     /**
      * @dev Retrieves the pending shares for a redemption request.
      * @param requestId The unique ID of the redemption request.
-     * @param owner The owner initiating the request.
      * @return pendingShares The amount of pending shares for the redemption request.
      */
     function pendingRedeemRequest(
         uint256 requestId,
-        address owner
+        address
     ) external view returns (uint256 pendingShares) {
         RedeemRecord memory record = redeemRecords[requestId];
         return record.shares;
@@ -270,12 +268,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     /**
      * @dev Retrieves the claimable assets for a deposit request.
      * @param requestId The unique ID of the deposit request.
-     * @param owner The owner initiating the request.
      * @return isPending The amount of claimable assets for the deposit request.
      */
     function claimableDepositRequest(
         uint256 requestId,
-        address owner
+        address
     ) external view returns (uint256 isPending) {
         DepositRecord memory record = depositRecords[requestId];
         require(record.assets > 0, "no deposit found");
@@ -285,12 +282,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     /**
      * @dev Retrieves the claimable shares for a redemption request.
      * @param requestId The unique ID of the redemption request.
-     * @param owner The owner initiating the request.
      * @return claimableShares The amount of claimable shares for the redemption request.
      */
     function claimableRedeemRequest(
         uint256 requestId,
-        address owner
+        address
     ) external view returns (uint256 claimableShares) {
         RedeemRecord memory record = redeemRecords[requestId];
         require(record.shares > 0, "no asset to redeem");

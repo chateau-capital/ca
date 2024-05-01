@@ -7,14 +7,24 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interface/IERC20Burnable.sol";
 import "../utils/NotAmerica.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-
 enum RECORD_STATUS {
     UNKNOWN,
     PENDING,
     COMPLETE,
     CANCELED
 }
-
+struct RedeemRecord {
+    address depositor;
+    address receiver;
+    uint256 shares;
+    RECORD_STATUS status;
+}
+struct DepositRecord {
+    address depositor;
+    address receiver;
+    uint256 assets;
+    RECORD_STATUS status;
+}
 /**
  * @title TokenVault
  * @author Tyler Fischer
@@ -42,43 +52,24 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    // State variables
     IERC20 public paymentToken;
     address public depositAddress;
-    // Structs
-    struct RedeemRecord {
-        address depositor;
-        address receiver;
-        uint256 shares;
-        RECORD_STATUS status;
-    }
-    struct DepositRecord {
-        address depositor;
-        address receiver;
-        uint256 assets;
-        RECORD_STATUS status;
-    }
-
-    // Mappings
+    uint256 private requestDepositIdCounter;
+    uint256 private requestRedeemIdCounter;
     mapping(uint256 => DepositRecord) public depositRecords;
     mapping(uint256 => RedeemRecord) public redeemRecords;
     mapping(address => uint256) public userDepositRecord;
     mapping(address => uint256) public userRedeemRecord;
-    uint256 private requestDepositIdCounter;
-    uint256 private requestRedeemIdCounter;
-
-    // Events
     event DepositCancelled(uint256 requestId, address depositor);
     event RedeemCancelled(uint256 requestId, address depositor);
 
     function _generateRequestDepositId() private returns (uint256) {
         return ++requestDepositIdCounter; // Increment and return the new value
     }
+
     function _generateRequestRedeemId() private returns (uint256) {
         return ++requestRedeemIdCounter; // Increment and return the new value
     }
-
-    // External functions
 
     /**
      * @dev Initiates a deposit request.
@@ -99,8 +90,6 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         );
         requestId = userDepositRecord[msg.sender];
         DepositRecord storage record = depositRecords[requestId];
-
-        // Check if a pending deposit already exists for the sender
         if (requestId != 0 && record.status == RECORD_STATUS.PENDING) {
             return requestId; // Return existing pending deposit ID
         } else {
@@ -125,7 +114,6 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
                 msg.sender,
                 assets
             );
-
             return requestId;
         }
     }

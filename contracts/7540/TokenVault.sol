@@ -8,6 +8,13 @@ import "../interface/IERC20Burnable.sol";
 import "../utils/NotAmerica.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
+enum RECORD_STATUS {
+    UNKNOWN,
+    PENDING,
+    COMPLETE,
+    CANCELED
+}
+
 /**
  * @title TokenVault
  * @author Tyler Fischer
@@ -43,13 +50,13 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         address depositor;
         address receiver;
         uint256 shares;
-        uint256 status; // 1 pending 2 complete 3 canceled
+        RECORD_STATUS status;
     }
     struct DepositRecord {
         address depositor;
         address receiver;
         uint256 assets;
-        uint256 status; // 1 pending 2 complete 3 canceled
+        RECORD_STATUS status;
     }
 
     // Mappings
@@ -97,7 +104,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         DepositRecord storage record = depositRecords[requestId];
 
         // Check if a pending deposit already exists for the sender
-        if (requestId != 0 && record.status == 1) {
+        if (requestId != 0 && record.status == RECORD_STATUS.PENDING) {
             return requestId; // Return existing pending deposit ID
         } else {
             SafeERC20.safeTransferFrom(
@@ -111,7 +118,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
                 depositor: msg.sender,
                 receiver: receiver,
                 assets: assets, // amount of USDC provided
-                status: 1
+                status: RECORD_STATUS.PENDING
             });
             userDepositRecord[owner] = requestId;
             emit DepositRequest(receiver, owner, requestId, msg.sender, assets);
@@ -132,14 +139,14 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 shares) {
         DepositRecord storage record = depositRecords[requestId];
         require(receiver == record.receiver, "Receiver mismatch");
-        require(record.status == 1, "No pending deposit");
+        require(record.status == RECORD_STATUS.PENDING, "No pending deposit");
         require(
             paymentToken.balanceOf(address(this)) >= record.assets,
             "Amount is greater than user balance"
         );
         shares = convertToShares(record.assets);
         _mint(receiver, shares);
-        record.status = 2;
+        record.status = RECORD_STATUS.COMPLETE;
         paymentToken.approve(address(this), record.assets);
         SafeERC20.safeTransferFrom(
             IERC20(paymentToken),
@@ -178,7 +185,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
             depositor: msg.sender,
             receiver: receiver,
             shares: shares,
-            status: 1
+            status: RECORD_STATUS.PENDING
         });
         userRedeemRecord[msg.sender] = requestId;
         // Record the redeem request, similar to deposit handling
@@ -192,14 +199,14 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
      */
     function redeem(uint256 requestId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         RedeemRecord storage record = redeemRecords[requestId];
-        require(record.status == 1, "No pending redeem");
+        require(record.status == RECORD_STATUS.PENDING, "No pending redeem");
         uint256 payment = convertToAssets(record.shares);
         require(
             paymentToken.balanceOf(address(this)) >= payment,
             "not enough stables in account"
         );
         SafeERC20.safeTransfer(IERC20(paymentToken), record.receiver, payment);
-        record.status = 2;
+        record.status = RECORD_STATUS.COMPLETE;
         emit RedeemClaimable(
             record.depositor,
             requestId,
@@ -215,14 +222,14 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     function cancelDeposit(uint256 requestId) external whenNotPaused {
         DepositRecord storage record = depositRecords[requestId];
         require(msg.sender == record.depositor, "Only depositor can cancel");
-        require(record.status == 1, "Deposit not pending");
+        require(record.status == RECORD_STATUS.PENDING, "Deposit not pending");
         require(
             paymentToken.balanceOf(address(this)) >= record.assets,
             "No funds currently in contract"
         );
         // Refund the deposited tokens back to the depositor
         // Update the deposit record status to indicate cancellation (assuming '3' is for canceled)
-        record.status = 3;
+        record.status = RECORD_STATUS.CANCELED;
         SafeERC20.safeTransfer(
             IERC20(paymentToken),
             record.depositor,
@@ -238,9 +245,9 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     function cancelRedeem(uint256 requestId) external whenNotPaused {
         RedeemRecord storage record = redeemRecords[requestId];
         require(msg.sender == record.depositor, "Only depositor can cancel");
-        require(record.status == 1, "Redeem not pending");
+        require(record.status == RECORD_STATUS.PENDING, "Redeem not pending");
         _mint(record.depositor, record.shares);
-        record.status = 3;
+        record.status = RECORD_STATUS.CANCELED;
         emit RedeemCancelled(requestId, record.depositor);
     }
 

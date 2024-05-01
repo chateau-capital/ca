@@ -156,7 +156,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         require(owner == msg.sender, "Owner must be sender");
         require(shares > 0, "Shares must be greater than 0");
         require(this.balanceOf(msg.sender) >= shares, "Insufficient shares");
-        _burn(receiver, shares);
+        _burn(msg.sender, shares);
         requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
         redeemRecords[requestId] = RedeemRecord({
             depositor: msg.sender,

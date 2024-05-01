@@ -147,7 +147,12 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
             depositAddress,
             record.assets
         );
-        emit DepositClaimable(receiver, requestId, record.assets, shares);
+        emit DepositClaimable(
+            record.depositor,
+            requestId,
+            record.assets,
+            shares
+        );
     }
 
     /**

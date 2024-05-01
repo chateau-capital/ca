@@ -16,17 +16,19 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     /**
      * @dev Constructor to initialize the TokenVault contract.
-     * @param _asset The address of the asset token.
      * @param _paymentToken The address of the payment token.
      * @param _owner The owner of the contract.
+     * @param _name The name of the token
+     * @param _symbol The symbol of the token.
      */
     constructor(
-        IERC20 _asset,
         IERC20 _paymentToken,
         address _owner,
         address _depositAddress,
-        address _priceControllerAddress
-    ) SimpleVault(_asset) {
+        address _priceControllerAddress,
+        string memory _name,
+        string memory _symbol
+    ) SimpleVault(_asset, _name, _symbol) {
         paymentToken = _paymentToken;
         depositAddress = _depositAddress;
         _grantRole(PRICE_SETTER_ROLE, _priceControllerAddress);

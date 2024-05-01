@@ -60,7 +60,11 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     /**
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC-20 or ERC-777).
      */
-    constructor(IERC20 asset_) ERC20("name", "symbol") {
+    constructor(
+        IERC20 asset_,
+        string memory name_,
+        string memory symbol_
+    ) ERC20(name_, symbol_) {
         _underlyingDecimals = decimals();
         _asset = asset_;
         _price = 1e18;

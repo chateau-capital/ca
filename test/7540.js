@@ -16,15 +16,14 @@ describe("TokenVault", function () {
 
     const Token = await hre.ethers.deployContract("USDT");
     const paymentToken = await Token.waitForDeployment();
-    const Share = await ethers.getContractFactory("Share");
-    const share = await Share.deploy("Share", "SHARE");
     const d7540 = await ethers.getContractFactory("TokenVault");
     const tokenVault = await d7540.deploy(
-      share.target,
       paymentToken.target,
       admin.address,
       multiSig.address,
-      priceSetter.address
+      priceSetter.address,
+      "reverse",
+      "REPO"
     );
 
     await paymentToken.mint(user1.address, TETHER_STARTING_BALANCE);
@@ -33,11 +32,11 @@ describe("TokenVault", function () {
     await paymentToken.connect(user2).approve(tokenVault.target, TETHER_STARTING_BALANCE);
     await paymentToken.mint(admin.address, TETHER_STARTING_BALANCE);
     await paymentToken.connect(admin).approve(tokenVault.target, TETHER_STARTING_BALANCE);
-    return { admin, user1, user2, multiSig, paymentToken, tokenVault, share, priceSetter };
+    return { admin, user1, user2, multiSig, paymentToken, tokenVault, priceSetter };
   }
   describe("deployment", function () {
     it("USDC should be the payment token, Share should be the share token", async function () {
-      const { tokenVault, usyc, paymentToken, share } = await loadFixture(deployTokenVaultFixture);
+      const { tokenVault, usyc, paymentToken } = await loadFixture(deployTokenVaultFixture);
       expect(paymentToken.target).to.not.equal(0, "Token address is zero");
       expect(await tokenVault.paymentToken()).equal(paymentToken.target);
     });
@@ -348,5 +347,18 @@ describe("TokenVault", function () {
 
     expect(await paymentToken.balanceOf(user1.address)).to.equal("90000000"); // this test should be lower TETHER_STARTING_BALANCE
     expect((await tokenVault.depositRecords(userDepositId))[3]).to.equal(1); // Assuming 1 represents a pending status
+
+    await tokenVault.connect(admin).deposit(1n, user1.address);
+
+    await tokenVault.connect(user1).requestDeposit(AMOUNT_TO_STAKE, user1.address, user1.address, "0x");
+
+    expect((await tokenVault.depositRecords(userDepositId))[3]).to.equal(2);
+  });
+  describe("deployment", function () {
+    it("should set the correct name and symbol for the token", async function () {
+      const { tokenVault } = await loadFixture(deployTokenVaultFixture);
+      expect(await tokenVault.name()).to.equal("reverse");
+      expect(await tokenVault.symbol()).to.equal("REPO");
+    });
   });
 });

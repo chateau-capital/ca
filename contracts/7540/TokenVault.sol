@@ -84,17 +84,14 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
      * @dev Initiates a deposit request.
      * @param assets The amount of assets to deposit.
      * @param receiver The address to receive the deposit.
-     * @param owner The owner initiating the request.
-     * @param data Additional data for the request.
      * @return requestId The unique ID of the deposit request.
      */
     function requestDeposit(
         uint256 assets,
         address receiver,
-        address owner,
-        bytes calldata data
+        address,
+        bytes calldata
     ) external whenNotPaused NOT_AMERICAN returns (uint256 requestId) {
-        require(owner == msg.sender, "Owner must be sender");
         require(assets > 0, "Assets must be greater than 0");
         require(
             paymentToken.balanceOf(msg.sender) >= assets,
@@ -120,8 +117,14 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
                 assets: assets, // amount of USDC provided
                 status: RECORD_STATUS.PENDING
             });
-            userDepositRecord[owner] = requestId;
-            emit DepositRequest(receiver, owner, requestId, msg.sender, assets);
+            userDepositRecord[msg.sender] = requestId;
+            emit DepositRequest(
+                receiver,
+                msg.sender,
+                requestId,
+                msg.sender,
+                assets
+            );
 
             return requestId;
         }
@@ -166,17 +169,14 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
      * @dev Initiates a redemption request.
      * @param shares The amount of shares to redeem.
      * @param receiver The address to receive the redemption.
-     * @param owner The owner initiating the request.
-     * @param data Additional data for the request.
      * @return requestId The unique ID of the redemption request.
      */
     function requestRedeem(
         uint256 shares,
         address receiver,
-        address owner,
-        bytes calldata data
+        address,
+        bytes calldata
     ) external whenNotPaused NOT_AMERICAN returns (uint256 requestId) {
-        require(owner == msg.sender, "Owner must be sender");
         require(shares > 0, "Shares must be greater than 0");
         require(this.balanceOf(msg.sender) >= shares, "Insufficient shares");
         _burn(msg.sender, shares);
@@ -189,7 +189,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         });
         userRedeemRecord[msg.sender] = requestId;
         // Record the redeem request, similar to deposit handling
-        emit RedeemRequest(receiver, owner, requestId, owner, shares);
+        emit RedeemRequest(receiver, msg.sender, requestId, msg.sender, shares);
         return requestId;
     }
 

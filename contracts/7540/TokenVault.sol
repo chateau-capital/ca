@@ -26,10 +26,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         address _owner,
         address _depositAddress,
         address _priceControllerAddress
-    ) SimpleVault(_asset) Ownable(_owner) {
+    ) SimpleVault(_asset) {
         paymentToken = _paymentToken;
         depositAddress = _depositAddress;
         _grantRole(PRICE_SETTER_ROLE, _priceControllerAddress);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     // State variables
@@ -118,7 +119,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     function deposit(
         uint256 requestId,
         address receiver
-    ) external override onlyOwner returns (uint256 shares) {
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 shares) {
         DepositRecord storage record = depositRecords[requestId];
         require(receiver == record.receiver, "Receiver mismatch");
         require(record.status == 1, "No pending deposit");
@@ -174,7 +175,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
      * @dev Processes a redemption request.
      * @param requestId The unique ID of the redemption request.
      */
-    function redeem(uint256 requestId) external onlyOwner {
+    function redeem(uint256 requestId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         RedeemRecord storage record = redeemRecords[requestId];
         require(record.status == 1, "No pending redeem");
         uint256 payment = convertToAssets(record.shares);
@@ -368,11 +369,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         revert();
     }
 
-    function pause() public onlyOwner {
+    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 }

@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { time, loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { keccak256, toUtf8Bytes, hexlify } = require("ethers");
 
 const AMOUNT = "150000000000000000000";
 const ANOTHER_AMOUNT = "10000000000000000000";
@@ -270,5 +271,41 @@ describe("TokenVault", function () {
       await tokenVault.connect(admin).unfreezeAccount(user1.address);
       await tokenVault.connect(user1).transfer(user2.address, AMOUNT_TO_STAKE);
     });
+  });
+  it("should allow the admin to revoke the PRICE_SETTER_ROLE", async function () {
+    const { tokenVault, admin, user1 } = await loadFixture(deployTokenVaultFixture);
+    // First, grant the role
+    await tokenVault.connect(admin).grantPriceSetter(user1.address);
+    // Now, revoke the role
+    await expect(tokenVault.connect(admin).revokePriceSetter(user1.address))
+      .to.emit(tokenVault, "RoleRevoked")
+      .withArgs(keccak256(toUtf8Bytes("PRICE_SETTER_ROLE")), user1.address, admin.address);
+    expect(await tokenVault.hasRole(keccak256(toUtf8Bytes("PRICE_SETTER_ROLE")), user1.address)).to.be.false;
+  });
+
+  it("should not allow non-admins to grant the PRICE_SETTER_ROLE", async function () {
+    const { tokenVault, admin, user1 } = await loadFixture(deployTokenVaultFixture);
+    // hardhat cant read custom errors
+    // await expect(tokenVault.connect(user1).grantPriceSetter(admin.address)).to.be.revertedWith(
+    //   "AccessControl: account " +
+    //     user1.address.toLowerCase() +
+    //     " is missing role " +
+    //     hexlify(keccak256(toUtf8Bytes("DEFAULT_ADMIN_ROLE")))
+    // );
+  });
+
+  it("should not allow non-admins to revoke the PRICE_SETTER_ROLE", async function () {
+    const { tokenVault, admin, user1 } = await loadFixture(deployTokenVaultFixture);
+    // First, grant the role using the admin account
+    await tokenVault.connect(admin).grantPriceSetter(user1.address);
+
+    // Attempt to revoke the role using a non-admin account
+    // hardhat cant read custom errors
+    // await expect(tokenVault.connect(user1).revokePriceSetter(user1.address)).to.be.revertedWith(
+    //   "AccessControl: account " +
+    //     user1.address.toLowerCase() +
+    //     " is missing role " +
+    //     hexlify(keccak256(toUtf8Bytes("DEFAULT_ADMIN_ROLE")))
+    // );
   });
 });

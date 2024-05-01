@@ -49,7 +49,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-abstract contract SimpleVault is ERC20, IERC4626, Ownable, AccessControl {
+abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     using Math for uint256;
     bytes32 public constant PRICE_SETTER_ROLE = keccak256("PRICE_SETTER_ROLE");
     IERC20 internal immutable _asset;
@@ -89,8 +89,7 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable, AccessControl {
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC-20 or ERC-777).
      */
     constructor(IERC20 asset_) ERC20("name", "symbol") {
-        (bool success, uint8 assetDecimals) = _tryGetAssetDecimals(asset_);
-        _underlyingDecimals = success ? assetDecimals : 18;
+        _underlyingDecimals = decimals();
         _asset = asset_;
         _price = 1e18;
     }
@@ -126,7 +125,7 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable, AccessControl {
         override(IERC20Metadata, ERC20)
         returns (uint8)
     {
-        return _underlyingDecimals + _decimalsOffset();
+        return 18;
     }
 
     function getPrice() public view returns (uint256) {
@@ -281,20 +280,28 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable, AccessControl {
         return 0;
     }
 
-    function freezeAccount(address account) external onlyOwner {
+    function freezeAccount(
+        address account
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _frozenAccounts[account] = true;
         emit AccountFrozen(account);
     }
 
-    function unfreezeAccount(address account) external onlyOwner {
+    function unfreezeAccount(
+        address account
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _frozenAccounts[account] = false;
         emit AccountUnfrozen(account);
     }
-    function grantPriceSetter(address account) public onlyOwner {
+    function grantPriceSetter(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         grantRole(PRICE_SETTER_ROLE, account);
     }
 
-    function revokePriceSetter(address account) public onlyOwner {
+    function revokePriceSetter(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(PRICE_SETTER_ROLE, account);
     }
 
@@ -316,5 +323,14 @@ abstract contract SimpleVault is ERC20, IERC4626, Ownable, AccessControl {
     ) public override(ERC20, IERC20) returns (bool) {
         require(!_frozenAccounts[sender], "Account is frozen");
         return super.transferFrom(sender, recipient, amount);
+    }
+
+    function addAdmin(address newAdmin) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+    }
+
+    // Function to remove an admin
+    function removeAdmin(address admin) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(DEFAULT_ADMIN_ROLE, admin);
     }
 }

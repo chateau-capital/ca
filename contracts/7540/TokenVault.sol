@@ -229,8 +229,6 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         emit RedeemCancelled(requestId, record.depositor);
     }
 
-    // External view functions
-
     /**
      * @dev Retrieves the pending assets for a deposit request.
      * @param requestId The unique ID of the deposit request.
@@ -287,86 +285,6 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         RedeemRecord memory record = redeemRecords[requestId];
         require(record.shares > 0, "no asset to redeem");
         return record.shares;
-    }
-
-    // these don't get used but are required in interface
-
-    /**
-     * @dev Emits that a deposit is claimable
-     * @param shares The amount of shares the user has
-     * @param assets The assets redeemable by the shares
-     * @param owner The owner initiating the request.
-
-     */
-    function emitDepositClaimable(
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) public {
-        emit DepositClaimable(owner, 0, assets, shares);
-    }
-
-    /**
-     * @dev Emits that a redemption is claimable
-     * @param shares The amount of shares the user has
-     * @param assets The assets redeemable by the shares
-     * @param owner The owner initiating the request.
-
-     */
-    function emitRedeemClaimable(
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) public {
-        emit RedeemClaimable(owner, 0, assets, shares);
-    }
-
-    /**
-     * @dev Previews a deposit 
-     * @param assets The assets to be deposited
-
-     */
-    function previewDeposit(
-        uint256 assets
-    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
-        revert();
-    }
-
-    /** @dev See {IERC4626-previewMint}. */
-
-    function previewMint(
-        uint256 shares
-    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
-        revert();
-    }
-
-    /** @dev See {IERC4626-withdraw}. */
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) public virtual override(IERC4626, SimpleVault) returns (uint256) {
-        revert();
-    }
-
-    /**
-     * @dev Previews a redemtion
-     * @param shares The amount of shares the user has
-     */
-    function previewRedeem(
-        uint256 shares
-    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
-        revert();
-    }
-
-    /**
-     * @dev Emits that a deposit is claimable
-     * @param assets The assets redeemable by the shares
-     */
-    function previewWithdraw(
-        uint256 assets
-    ) public view virtual override(IERC4626, SimpleVault) returns (uint256) {
-        revert();
     }
 
     function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {

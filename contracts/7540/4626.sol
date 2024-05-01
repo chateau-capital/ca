@@ -58,57 +58,12 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     uint256 private _price; // Price of the asset in terms of the USYC
 
     /**
-     * @dev Attempted to deposit more assets than the max amount for `receiver`.
-     */
-    error ERC4626ExceededMaxDeposit(
-        address receiver,
-        uint256 assets,
-        uint256 max
-    );
-
-    /**
-     * @dev Attempted to mint more shares than the max amount for `receiver`.
-     */
-    error ERC4626ExceededMaxMint(address receiver, uint256 shares, uint256 max);
-
-    /**
-     * @dev Attempted to withdraw more assets than the max amount for `receiver`.
-     */
-    error ERC4626ExceededMaxWithdraw(
-        address owner,
-        uint256 assets,
-        uint256 max
-    );
-
-    /**
-     * @dev Attempted to redeem more shares than the max amount for `receiver`.
-     */
-    error ERC4626ExceededMaxRedeem(address owner, uint256 shares, uint256 max);
-
-    /**
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC-20 or ERC-777).
      */
     constructor(IERC20 asset_) ERC20("name", "symbol") {
         _underlyingDecimals = decimals();
         _asset = asset_;
         _price = 1e18;
-    }
-
-    /**
-     * @dev Attempts to fetch the asset decimals. A return value of false indicates that the attempt failed in some way.
-     */
-    function _tryGetAssetDecimals(
-        IERC20 asset_
-    ) private view returns (bool, uint8) {
-        (bool success, bytes memory encodedDecimals) = address(asset_)
-            .staticcall(abi.encodeCall(IERC20Metadata.decimals, ()));
-        if (success && encodedDecimals.length >= 32) {
-            uint256 returnedDecimals = abi.decode(encodedDecimals, (uint256));
-            if (returnedDecimals <= type(uint8).max) {
-                return (true, uint8(returnedDecimals));
-            }
-        }
-        return (false, 0);
     }
 
     /**
@@ -239,7 +194,7 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
     function _convertToShares(
         uint256 assets
     ) public view virtual returns (uint256) {
-        return ((assets * 1e12) / _price) * 1e18; // Adjust asset value based on price
+        return ((assets * 1e30) / _price); // Adjust asset value based on price
     }
 
     /**
@@ -274,10 +229,6 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
         uint256 shares
     ) internal virtual {
         revert();
-    }
-
-    function _decimalsOffset() internal view virtual returns (uint8) {
-        return 0;
     }
 
     function freezeAccount(

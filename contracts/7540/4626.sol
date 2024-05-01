@@ -321,7 +321,8 @@ abstract contract SimpleVault is ERC20, IERC4626, AccessControl {
         address recipient,
         uint256 amount
     ) public override(ERC20, IERC20) returns (bool) {
-        require(!_frozenAccounts[sender], "Account is frozen");
+        require(!_frozenAccounts[sender], "Sender is frozen");
+        require(!_frozenAccounts[recipient], "Recipient is frozen");
         return super.transferFrom(sender, recipient, amount);
     }
 

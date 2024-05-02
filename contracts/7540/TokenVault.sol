@@ -167,18 +167,29 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     ) external whenNotPaused NOT_AMERICAN returns (uint256 requestId) {
         require(shares > 0, "Shares must be greater than 0");
         require(this.balanceOf(msg.sender) >= shares, "Insufficient shares");
-        _burn(msg.sender, shares);
-        requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
-        redeemRecords[requestId] = RedeemRecord({
-            depositor: msg.sender,
-            receiver: receiver,
-            shares: shares,
-            status: RECORD_STATUS.PENDING
-        });
-        userRedeemRecord[msg.sender] = requestId;
-        // Record the redeem request, similar to deposit handling
-        emit RedeemRequest(receiver, msg.sender, requestId, msg.sender, shares);
-        return requestId;
+        RedeemRecord storage record = redeemRecords[requestId];
+        if (requestId != 0 && record.status == RECORD_STATUS.PENDING) {
+            return requestId;
+        } else {
+            _burn(msg.sender, shares);
+            requestId = _generateRequestRedeemId(); // Implement this to generate a unique request ID
+            redeemRecords[requestId] = RedeemRecord({
+                depositor: msg.sender,
+                receiver: receiver,
+                shares: shares,
+                status: RECORD_STATUS.PENDING
+            });
+            userRedeemRecord[msg.sender] = requestId;
+            // Record the redeem request, similar to deposit handling
+            emit RedeemRequest(
+                receiver,
+                msg.sender,
+                requestId,
+                msg.sender,
+                shares
+            );
+            return requestId;
+        }
     }
 
     /**

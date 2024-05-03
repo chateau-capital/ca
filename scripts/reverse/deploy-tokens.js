@@ -4,14 +4,13 @@ async function main() {
   const [admin, user1, user2] = await ethers.getSigners();
   const Token = await hre.ethers.deployContract("USDC");
   const paymentToken = await Token.waitForDeployment();
-  const Share = await ethers.getContractFactory("Share");
-  const share = await Share.deploy("Share", "SHARE");
-  await paymentToken.mint(admin.address, "100000000"); //100
+  await paymentToken.mint(admin.address, "1000000000"); //1000
+  await paymentToken.mint("0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7", "1000000000"); //1000
 
   console.table({
-    shareCoin: share.target,
     usdtCoin: paymentToken.target,
     owner: admin.address,
+    otherAccount: "0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7",
   });
 }
 

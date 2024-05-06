@@ -6,7 +6,6 @@ async function main() {
   const paymentToken = await Token.waitForDeployment();
   await paymentToken.mint(admin.address, "1000000000"); //1000
   await paymentToken.mint("0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7", "1000000000"); //1000
-
   console.table({
     usdtCoin: paymentToken.target,
     owner: admin.address,

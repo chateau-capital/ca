@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 // Import or define IERC7540 interfaces...
 import "./4626.sol";
 import "../interface/IERC7540.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interface/IERC20Burnable.sol";
 import "../utils/NotAmerica.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -56,6 +55,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     address public depositAddress;
     uint256 private requestDepositIdCounter;
     uint256 private requestRedeemIdCounter;
+    uint256 public feeMultiplier = 1;
     mapping(uint256 => DepositRecord) public depositRecords;
     mapping(uint256 => RedeemRecord) public redeemRecords;
     mapping(address => uint256) public userDepositRecord;
@@ -135,7 +135,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
             paymentToken.balanceOf(address(this)) >= record.assets,
             "Amount is greater than user balance"
         );
-        shares = convertToShares(record.assets);
+        shares = convertToShares(record.assets) * feeMultiplier;
         _mint(receiver, shares);
         record.status = RECORD_STATUS.COMPLETE;
         paymentToken.approve(address(this), record.assets);
@@ -310,5 +310,10 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
 
     function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
+    }
+
+    function setFee(uint256 _fee) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_fee > 0);
+        feeMultiplier = _fee;
     }
 }

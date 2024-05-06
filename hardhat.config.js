@@ -32,6 +32,12 @@ module.exports = {
       accounts: [process.env.FTM_PRIVATE_KEY],
       allowUnlimitedContractSize: true,
     },
+
+    sepolia: {
+      url: "https://eth-sepolia.g.alchemy.com/v2/Q-5WE2Dr5yWuYKOTxBbeK620WE_gnlWG",
+      accounts: [process.env.PRIVATE_KEY],
+      allowUnlimitedContractSize: true,
+    },
     // neondevnet: {
     //   url: "https://devnet.neonevm.org",
     //   accounts: [process.env.PRIVATE_KEY],

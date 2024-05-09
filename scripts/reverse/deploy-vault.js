@@ -3,14 +3,15 @@ async function main() {
   const [admin, user1, user2] = await ethers.getSigners();
   const D7540 = await ethers.getContractFactory("TokenVault", {
     libraries: {
-      // QuadReaderUtils: "0xfeb98861425c6d2819c0d0ee70e45abcf71b43da", // arb one
-      QuadReaderUtils: "0x49CF5d391B223E9196A7f5927A44D57fec1244C8",
+      QuadReaderUtils: "0xfeb98861425c6d2819c0d0ee70e45abcf71b43da", // arb one
+      QuadReaderUtils: "0x49CF5d391B223E9196A7f5927A44D57fec1244C8", // sep (i think)
     },
   });
-  const paymentToken = "0x24f63Cf7427Dc75cEdeb1e1e1A8C7EA6e0452F76";
-  const owner = "0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7";
-  const depositAddress = "0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7";
-  const priceControllerAddress = "0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7";
+  const arb_usdc = "0xaf88d065e77c8cc2239327c5edb3a432268e5831";
+  const paymentToken = arb_usdc;
+  const owner = "0xf80BA83d2a76E0a30C35FaC345EA26b295a4f63F";
+  const depositAddress = "0xf80BA83d2a76E0a30C35FaC345EA26b295a4f63F";
+  const priceControllerAddress = "0xf80BA83d2a76E0a30C35FaC345EA26b295a4f63F";
   // IERC20 _paymentToken,
   // address _owner,
   // address _depositAddress,
@@ -22,8 +23,8 @@ async function main() {
     owner,
     depositAddress,
     priceControllerAddress,
-    "Reverse",
-    "Chateau Reverse Repo"
+    "Chateau Reverse Repo",
+    "CRR.D"
   );
 
   console.table({
@@ -31,6 +32,15 @@ async function main() {
     admin: admin.address,
     other: "0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7",
   });
+  try {
+    await hre.run("verify:verify", {
+      address: d7540.target,
+      constructorArguments: [arb_usdc, owner, depositAddress, priceControllerAddress, "Chateau Reverse Repo", "CRR.D"],
+      network: "arbitrum",
+    });
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

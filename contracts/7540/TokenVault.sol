@@ -55,7 +55,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     address public depositAddress;
     uint256 private requestDepositIdCounter;
     uint256 private requestRedeemIdCounter;
-    uint256 public feeMultiplier = 1;
+    uint256 public fee = 1; //increment by .1% so 25 == 2.5% 1 == .1%
     mapping(uint256 => DepositRecord) public depositRecords;
     mapping(uint256 => RedeemRecord) public redeemRecords;
     mapping(address => uint256) public userDepositRecord;
@@ -64,11 +64,11 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
     event RedeemCancelled(uint256 requestId, address depositor);
 
     function _generateRequestDepositId() private returns (uint256) {
-        return ++requestDepositIdCounter; // Increment and return the new value
+        return ++requestDepositIdCounter;
     }
 
     function _generateRequestRedeemId() private returns (uint256) {
-        return ++requestRedeemIdCounter; // Increment and return the new value
+        return ++requestRedeemIdCounter;
     }
 
     /**
@@ -99,7 +99,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
                 address(this),
                 assets
             );
-            requestId = _generateRequestDepositId(); // Implement this method based on your ID strategy
+            requestId = _generateRequestDepositId();
             depositRecords[requestId] = DepositRecord({
                 depositor: msg.sender,
                 receiver: receiver,
@@ -135,7 +135,7 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
             paymentToken.balanceOf(address(this)) >= record.assets,
             "Amount is greater than user balance"
         );
-        shares = convertToShares(record.assets) * feeMultiplier;
+        shares = convertToShares(record.assets - getPercentage(record.assets));
         _mint(receiver, shares);
         record.status = RECORD_STATUS.COMPLETE;
         paymentToken.approve(address(this), record.assets);
@@ -303,17 +303,48 @@ contract TokenVault is IERC7540, SimpleVault, NotAmerica, Pausable {
         require(record.shares > 0, "no asset to redeem");
         return record.shares;
     }
-
+    /**
+     * @dev Pauses all activities that can be paused by changing the state to paused. This is a security feature
+     * in case of an emergency requiring a halt in operations. Only accessible by an admin role.
+     */
     function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }
 
+    /**
+     * @dev Unpauses the contract allowing normal operations to resume, reversing the effect of the pause() function.
+     * Only accessible by an admin role.
+     */
     function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 
+    /**
+     * @dev Sets the fee percentage for transactions within the vault. The fee is denoted in tenths of a percent.
+     * @param _fee The new fee percentage to set. Must be a non-negative value and cannot exceed 1000 (which represents 100%).
+     */
     function setFee(uint256 _fee) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_fee > 0);
-        feeMultiplier = _fee;
+        require(_fee >= 0, "Fee must be non-negative");
+        fee = _fee;
+    }
+
+    /**
+     * @dev Sets the address where deposited assets should be transferred. This is likely an operational or treasury account.
+     * @param _deposiAddress The new address to which assets are transferred upon deposits.
+     */
+    function setDepositAddress(
+        address _deposiAddress
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        depositAddress = _deposiAddress;
+    }
+
+    /**
+     * @dev Calculates the fee to be deducted from a transaction based on the fee percentage and the amount involved.
+     * @param value The amount on which the fee is to be calculated.
+     * @return The calculated fee amount.
+     */
+    function getPercentage(uint256 value) public view returns (uint256) {
+        require(fee <= 1000, "Fee percentage cannot exceed 100%");
+        return (value * fee) / 1000; // Calculate fee as a fraction of 1000 (i.e., 1000 is 100%, 1 is 0.1%).
     }
 }

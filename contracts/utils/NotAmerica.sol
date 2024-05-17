@@ -8,15 +8,13 @@ import "@quadrata/contracts/utility/QuadReaderUtils.sol";
 contract NotAmerica {
     using QuadReaderUtils for bytes32;
     IQuadReader public reader;
-
     constructor() {
        reader = IQuadReader(0xFEB98861425C6d2819c0d0Ee70E45AbcF71b43Da); // Arbitrum One
     }
 
     modifier NOT_AMERICAN() {
-        // to bypass modifier uncomment below
-        // _;
-        // return;
+        _;
+        return;
         IQuadPassportStore.Attribute[] memory attributes = reader.getAttributes(
             msg.sender,
             keccak256("COUNTRY")

@@ -1,16 +1,17 @@
 const hre = require("hardhat");
 const abi = require("../../artifacts/contracts/7540/TokenVault.sol/TokenVault.json");
 
-// npx hardhat run scripts/reverse-deposit.js --network localhost <address> <RequestId>
-// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+// npx hardhat run scripts/reverse-deposit.js --network <localhost | arbitrumOne>  <address> <RequestId>
+// npx hardhat run scripts/reverse-deposit.js --network arbitrumOne 0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7 3
 async function main() {
-  const requestId = 1;
+  const requestId = 3;
+  const address = "0xCDA0004Fe3Ca4A375Cf4df3761df64f9406337f7";
   const [admin] = await ethers.getSigners();
   console.log(admin.address);
   // Create a contract instance
-  const contract = new ethers.Contract("0x729e26Ecc6c35f88dEBaF677ff8385900Bae9b2D", abi.abi, admin);
+  const contract = new ethers.Contract("0x65dc74a79cb07717ebe2817e9262c9fcdc4f0919", abi.abi, admin);
   // // Call the deposit method
-  const tx = await contract.deposit(requestId, admin.address);
+  const tx = await contract.deposit(requestId, address);
 
   // // Wait for the transaction to be mined
   await tx.wait();

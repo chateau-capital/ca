@@ -3,8 +3,8 @@ async function main() {
   const [admin, user1, user2] = await ethers.getSigners();
   const D7540 = await ethers.getContractFactory("TokenVault", {
     libraries: {
-      QuadReaderUtils: "0xfeb98861425c6d2819c0d0ee70e45abcf71b43da", // arb one
-      QuadReaderUtils: "0x49CF5d391B223E9196A7f5927A44D57fec1244C8", // sep (i think)
+      QuadReaderUtils: "0x122E7d91d384619FF9698F14ebC418DF697a1678", // arb one
+      // QuadReaderUtils: "0x49CF5d391B223E9196A7f5927A44D57fec1244C8", // sep (i think)
     },
   });
   const arb_usdc = "0xaf88d065e77c8cc2239327c5edb3a432268e5831";

@@ -1,11 +1,12 @@
 const hre = require("hardhat");
 const abi = require("../../artifacts/contracts/7540/TokenVault.sol/TokenVault.json");
 
+// npx hardhat run scripts/reverse/redeem.js --network arbitrumOne
 async function main() {
   const requestId = 1;
   const [admin] = await ethers.getSigners();
   // Create a contract instance
-  const contract = new ethers.Contract("0x729e26Ecc6c35f88dEBaF677ff8385900Bae9b2D", abi.abi, admin);
+  const contract = new ethers.Contract("0x65dc74a79cb07717ebe2817e9262c9fcdc4f0919", abi.abi, admin);
   // // Call the deposit method
   const tx = await contract.redeem(requestId);
   // // Wait for the transaction to be mined

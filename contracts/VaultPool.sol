@@ -10,14 +10,13 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interface/IERC20Burnable.sol";
-import "./utils/NotAmerica.sol";
 
 /// @title Vault Pool for RWA Token Redemption
 /// @author Kaso Qian & Hao Jun Tan
 /// @notice Manages centralized user redemption function for RWA tokens.
-/// @dev integrates with NotAmerica for nationality checks, uses Pausable for emergency stops.
+/// @dev uses Pausable for emergency stops.
 
-contract VaultPool is Ownable, NotAmerica, Pausable {
+contract VaultPool is Ownable, Pausable {
     using SafeERC20 for IERC20Burnable;
 
     /// @notice The token to be redeemed (stablecoin).
@@ -89,7 +88,7 @@ contract VaultPool is Ownable, NotAmerica, Pausable {
     /// @param amount The amount of RWA tokens to redeem in 10**18
     function redeem(
         uint256 amount
-    ) public whenNotPaused NOT_AMERICAN reentrancy {
+    ) public whenNotPaused reentrancy {
         require(amount > 0, "Amount should be greater than 0");
 
         /// @notice determines the correct amount of USDT owed to the user based on amount of RWA tokens they have.

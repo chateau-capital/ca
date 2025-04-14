@@ -4,17 +4,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./utils/NotAmerica.sol";
 import "./interface/IERC20Burnable.sol";
-
-import "hardhat/console.sol";
 
 /// @title Staking Pool for RWA Token Issuance
 /// @author Kaso Qian
-/// @dev This contract manages staking pools for RWA token issuance, incorporating a nationality check from the NotAmerica contract to exclude US persons.
-/// @notice Allows for the staking of stablecoin to obtain RWA tokens and redeeming them under specified conditions, excluding US persons.
+/// @dev This contract manages staking pools for RWA token issuance
+/// @notice Allows for the staking of stablecoin to obtain RWA tokens and redeeming them under specified conditions
 
-contract StakingPool is Ownable, NotAmerica {
+contract StakingPool is Ownable {
     using SafeERC20 for IERC20Burnable;
     
     /// token to issue
@@ -81,9 +78,8 @@ contract StakingPool is Ownable, NotAmerica {
     event AdminWithdraw(address indexed user, uint withdraw);
 
     /// @notice Stake tokens in the contract
-    /// @dev Requires the caller to not be an American, as per the NotAmerica modifier
     /// @param amount The amount of tokens to stake
-    function stake(uint256 amount) public NOT_AMERICAN reentrancy{
+    function stake(uint256 amount) public reentrancy{
         require(amount >= 10 * 10 ** issueToken.decimals(), "Amount should be greater than 10");
         issueToken.safeTransferFrom(msg.sender, address(this), amount);
         issues[indexEnd] = Issue(msg.sender, amount, block.timestamp, true);
@@ -97,7 +93,7 @@ contract StakingPool is Ownable, NotAmerica {
 
     /// @notice Allows users to unstake their tokens
     /// @dev Iterates over the user's issues to calculate total unstakable amount
-    function unstake() public NOT_AMERICAN reentrancy{
+    function unstake() public reentrancy{
         uint[] memory userIssueIndexs = userIssueIndex[msg.sender];
 
         uint unstakeAmount;

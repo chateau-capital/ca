@@ -13,15 +13,26 @@ async function main() {
 
   // const usdtCoin = await hre.ethers.getContractAt("USDT","0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9");
 
+  // USDC ABI - minimal ABI with just the functions we need
+  const usdcAbi = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)",
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function transferFrom(address from, address to, uint256 amount) returns (bool)"
+  ];
 
-  const usdcCoin = await hre.ethers.getContractAt("USDC","0xaf88d065e77c8cC2239327C5EDb3A432268e5831");
+  // Get the USDC contract using the ABI directly
+  const usdcCoin = await hre.ethers.getContractAt(usdcAbi, "0xaf88d065e77c8cC2239327C5EDb3A432268e5831");
 
   const Factory = await hre.ethers.deployContract("Factory");
   const factory = await Factory.waitForDeployment();
 
-  const Fund = await factory.newFund.staticCall("FundName","fTicker",usdcCoin.target);
+  const Fund = await factory.newFund.staticCall("FundName","fTicker","0xaf88d065e77c8cC2239327C5EDb3A432268e5831");
 
-  await factory.newFund("Chateau Alternative Debt","ch.AD", usdcCoin.target);
+  await factory.newFund("Chateau Alternative Debt","ch.AD", "0xaf88d065e77c8cC2239327C5EDb3A432268e5831");
 
   console.table({
     shareCoin: Fund[0],

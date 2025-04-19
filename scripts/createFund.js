@@ -8,7 +8,7 @@ const hre = require("hardhat");
 
 async function main() {
   // Replace with your deployed Factory contract address
-  const FACTORY_ADDRESS = "YOUR_FACTORY_ADDRESS_HERE";
+  const FACTORY_ADDRESS = "0xc918c2F7dc13CB0b1bd06E8641ed68576Dc2367b";
   
   // USDC on Arbitrum Sepolia
   const USDC_ADDRESS = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
@@ -17,8 +17,8 @@ async function main() {
   const factory = await hre.ethers.getContractAt("Factory", FACTORY_ADDRESS);
   
   // Fund details
-  const fundName = "My New Fund";
-  const fundTicker = "MNF";
+  const fundName = "Chateau Anthropic";
+  const fundTicker = "ch.Anthropic";
   
   console.log(`Creating new fund: ${fundName} (${fundTicker})`);
   

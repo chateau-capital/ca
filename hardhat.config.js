@@ -21,6 +21,13 @@ module.exports = {
   },
 
   networks: {
+    mainnet: {
+      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 1,
+      saveDeployments: true,
+      tags: ["mainnet"],
+    },
     arbitrumOne: {
       url: `${process.env.ARB_NODE}${process.env.ARB_ALCHEMY_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
@@ -49,6 +56,7 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || "",
       // neonevm: "test",
       // sepolia: process.env.ETHERSCAN_API_KEY || "",
       // etherscan: process.env.ETHERSCAN_API_KEY || "",

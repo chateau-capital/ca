@@ -3,16 +3,11 @@ const hre = require("hardhat");
 async function main() {
   const USDT = await hre.ethers.getContractFactory("USDT");
   const usdtCoin = await USDT.deploy("1000000"); // Deploying USDT contract
-  const QuadReaderUtils = await hre.ethers.getContractFactory("QuadReaderUtils");
-  const quadReaderUtils = await QuadReaderUtils.deploy(); // Deploying USDT contract
-  const Factory = await hre.ethers.deployContract("Factory", {
-    libraries: {
-      QuadReaderUtils: await quadReaderUtils.getAddress(),
-    },
-  });
+ 
+  const Factory = await hre.ethers.deployContract("Factory");
   const factory = await Factory.waitForDeployment();
   const Fund = await factory.newFund.staticCall("RWA", "RWA", usdtCoin.target);
-  await factory.newFund("CHAD.D", "Chateau Alternative Debt ", usdtCoin.target);
+  await factory.newFund("Chateau Alternative Debt","ch.AD", usdcCoin.target);
 
   console.table({
     shareCoin: Fund[0],
@@ -20,7 +15,7 @@ async function main() {
     stakingPool: Fund[1],
     vaultPool: Fund[2],
     factory: factory.target,
-    quadReaderUtils: await quadReaderUtils.getAddress(),
+
   });
 }
 

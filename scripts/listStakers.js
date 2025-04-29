@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 
 async function main() {
     // Contract address
-    const STAKING_POOL_ADDRESS = "0x704465f4a77af3adccd8aa2fcae55a625dc3296c";
+    const STAKING_POOL_ADDRESS = "0xA9022e82BF58CBEF61024967CE54fD13CC013d45";
     
     // Get the contract
     const stakingPool = await ethers.getContractAt("StakingPool", STAKING_POOL_ADDRESS);
